@@ -1,66 +1,130 @@
 import { useCallback, useMemo, useState } from 'react'
-import { buildQueue, todayISO, type Grade, type QueueCard } from '../lib/sm2'
+import {
+  buildGroupQueue,
+  gradeFromTyping,
+  normalize,
+  todayISO,
+  type Grade,
+} from '../lib/sm2'
 import type { Grapheme, Phoneme } from '../lib/types'
 import { useStore } from './useStore'
 
-export interface ActiveCard extends QueueCard {
-  phoneme: Phoneme
+/** 'spell' = typing spellings, 'reveal' = answers shown + typing examples. */
+export type Phase = 'spell' | 'reveal'
+
+export type MatchResult = 'hit' | 'dup' | 'miss'
+
+export interface GraphemeOutcome {
   grapheme: Grapheme
+  spellingFound: boolean
+  examplesFound: string[]
+  grade: Grade
 }
 
 /**
- * One study session. The queue is snapshotted when the session starts so
- * rescheduling a card mid-session doesn't reshuffle what's left; answering
- * "Sai" or "Khó" pushes the card to the back of this session's queue.
+ * One study session. The unit is a sound group: you type every spelling that
+ * makes the sound, then its example words. Grades come from what you typed, and
+ * a group with any grade below 4 comes back at the end of this session.
  */
 export function useStudyQueue() {
   const { data, gradeCard } = useStore()
   const today = useMemo(() => todayISO(), [])
 
-  const [queue, setQueue] = useState<QueueCard[]>(() => buildQueue(data.phonemes, today))
-  const [flipped, setFlipped] = useState(false)
+  const [queue, setQueue] = useState<string[]>(() => buildGroupQueue(data.phonemes, today))
+  const [phase, setPhase] = useState<Phase>('spell')
+  const [found, setFound] = useState<string[]>([])
+  const [rejected, setRejected] = useState<string[]>([])
+  const [examplesFound, setExamplesFound] = useState<Record<string, string[]>>({})
   const [reviewed, setReviewed] = useState(0)
 
-  const lookup = useCallback(
-    (c: QueueCard | undefined): ActiveCard | null => {
-      if (!c) return null
-      const phoneme = data.phonemes.find((p) => p.id === c.phonemeId)
-      const grapheme = phoneme?.graphemes.find((g) => g.id === c.graphemeId)
-      if (!phoneme || !grapheme) return null
-      return { ...c, phoneme, grapheme }
+  const group: Phoneme | null = data.phonemes.find((p) => p.id === queue[0]) ?? null
+
+  const submitSpelling = useCallback(
+    (text: string): MatchResult => {
+      const n = normalize(text)
+      if (!group || !n) return 'miss'
+      const hit = group.graphemes.find((g) => normalize(g.spelling) === n)
+      if (!hit) {
+        setRejected((r) => (r.includes(n) ? r : [...r, n]))
+        return 'miss'
+      }
+      if (found.includes(hit.id)) return 'dup'
+      setFound((f) => [...f, hit.id])
+      return 'hit'
     },
-    [data.phonemes],
+    [group, found],
   )
 
-  const card = lookup(queue[0])
-
-  const answer = useCallback(
-    (grade: Grade) => {
-      const current = queue[0]
-      if (!current) return
-      gradeCard(current.phonemeId, current.graphemeId, grade, today)
-      setReviewed((n) => n + 1)
-      setFlipped(false)
-      // "Sai" and "Khó" come back at the end of this session. SM-2 scheduling
-      // still treats grade 3 as a pass — this only affects the current session.
-      setQueue((q) => (grade < 4 ? [...q.slice(1), current] : q.slice(1)))
+  const submitExample = useCallback(
+    (graphemeId: string, text: string): MatchResult => {
+      const n = normalize(text)
+      if (!group || !n) return 'miss'
+      const g = group.graphemes.find((x) => x.id === graphemeId)
+      const hit = g?.examples.find((ex) => normalize(ex) === n)
+      if (!hit) return 'miss'
+      const already = examplesFound[graphemeId] ?? []
+      if (already.includes(hit)) return 'dup'
+      setExamplesFound((m) => ({ ...m, [graphemeId]: [...(m[graphemeId] ?? []), hit] }))
+      return 'hit'
     },
-    [queue, gradeCard, today],
+    [group, examplesFound],
   )
+
+  /** Live per-grapheme result — also what `commit` writes to the store. */
+  const outcomes: GraphemeOutcome[] = useMemo(() => {
+    if (!group) return []
+    return group.graphemes.map((g) => {
+      const spellingFound = found.includes(g.id)
+      const hits = examplesFound[g.id] ?? []
+      return {
+        grapheme: g,
+        spellingFound,
+        examplesFound: hits,
+        grade: gradeFromTyping({
+          spellingFound,
+          hasExamples: g.examples.length > 0,
+          examplesFound: hits.length,
+        }),
+      }
+    })
+  }, [group, found, examplesFound])
+
+  const reset = useCallback(() => {
+    setPhase('spell')
+    setFound([])
+    setRejected([])
+    setExamplesFound({})
+  }, [])
+
+  const check = useCallback(() => setPhase('reveal'), [])
+
+  const commit = useCallback(() => {
+    if (!group) return
+    for (const o of outcomes) gradeCard(group.id, o.grapheme.id, o.grade, today)
+    const needsRepeat = outcomes.some((o) => o.grade < 4)
+    setQueue((q) => (needsRepeat ? [...q.slice(1), q[0]] : q.slice(1)))
+    setReviewed((n) => n + 1)
+    reset()
+  }, [group, outcomes, gradeCard, today, reset])
 
   const restart = useCallback(() => {
-    setQueue(buildQueue(data.phonemes, today))
+    setQueue(buildGroupQueue(data.phonemes, today))
     setReviewed(0)
-    setFlipped(false)
-  }, [data.phonemes, today])
+    reset()
+  }, [data.phonemes, today, reset])
 
   return {
-    card,
+    group,
+    phase,
+    outcomes,
+    rejected,
+    foundCount: found.length,
     remaining: queue.length,
     reviewed,
-    flipped,
-    flip: () => setFlipped((f) => !f),
-    answer,
+    submitSpelling,
+    submitExample,
+    check,
+    commit,
     restart,
     today,
   }

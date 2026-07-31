@@ -1,11 +1,14 @@
 import { describe, it, expect } from 'vitest'
 import {
   addDays,
+  buildGroupQueue,
   buildQueue,
   computeStats,
   daysBetween,
+  gradeFromTyping,
   isLearned,
   newReviewState,
+  normalize,
   review,
 } from './sm2'
 import type { Phoneme, ReviewState } from './types'
@@ -155,6 +158,47 @@ describe('buildQueue', () => {
 
   it('returns nothing when there are no cards', () => {
     expect(buildQueue([], TODAY)).toEqual([])
+  })
+
+  it('groups inherit the priority of their most urgent grapheme', () => {
+    // p1 leads: its 'late5' is the most overdue card anywhere.
+    expect(buildGroupQueue(phonemes, TODAY)).toEqual(['p1', 'p2'])
+  })
+
+  it('leaves out groups with nothing to study', () => {
+    const far: Phoneme = {
+      id: 'p3',
+      note: 'xa',
+      type: 'vowel',
+      graphemes: [
+        { id: 'x', spelling: 'x', examples: [], review: state({ nextDue: '2026-12-01' }) },
+      ],
+    }
+    expect(buildGroupQueue([...phonemes, far], TODAY)).not.toContain('p3')
+  })
+})
+
+describe('normalize', () => {
+  it('ignores case and surrounding spaces', () => {
+    expect(normalize('  OUGH ')).toBe('ough')
+  })
+})
+
+describe('gradeFromTyping', () => {
+  it('missing the spelling is a fail', () => {
+    expect(gradeFromTyping({ spellingFound: false, hasExamples: true, examplesFound: 2 })).toBe(1)
+  })
+
+  it('spelling without any example is Khó', () => {
+    expect(gradeFromTyping({ spellingFound: true, hasExamples: true, examplesFound: 0 })).toBe(3)
+  })
+
+  it('spelling plus at least one example is Tốt', () => {
+    expect(gradeFromTyping({ spellingFound: true, hasExamples: true, examplesFound: 1 })).toBe(4)
+  })
+
+  it('does not punish a grapheme that has no examples stored', () => {
+    expect(gradeFromTyping({ spellingFound: true, hasExamples: false, examplesFound: 0 })).toBe(4)
   })
 })
 

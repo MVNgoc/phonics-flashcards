@@ -1,14 +1,29 @@
 import type { Phoneme, Grapheme, ReviewState } from './types'
 
-/** Self-rating buttons map to SM-2 grades (Anki-style). */
+/** Anki-style grade scale. Auto-grading only emits 1 / 3 / 4; 5 stays supported. */
 export type Grade = 1 | 3 | 4 | 5
 
-export const GRADES: { grade: Grade; label: string; key: string; color: string }[] = [
-  { grade: 1, label: 'Sai', key: '1', color: 'bg-rose-600 hover:bg-rose-500' },
-  { grade: 3, label: 'Khó', key: '2', color: 'bg-amber-600 hover:bg-amber-500' },
-  { grade: 4, label: 'Tốt', key: '3', color: 'bg-emerald-600 hover:bg-emerald-500' },
-  { grade: 5, label: 'Dễ', key: '4', color: 'bg-sky-600 hover:bg-sky-500' },
-]
+export const GRADE_LABEL: Record<Grade, string> = { 1: 'Sai', 3: 'Khó', 4: 'Tốt', 5: 'Dễ' }
+
+/** Typed answers are matched case-insensitively, ignoring surrounding spaces. */
+export function normalize(text: string): string {
+  return text.trim().toLowerCase()
+}
+
+/**
+ * Auto-grade one grapheme from what the user typed:
+ * missed the spelling -> 1, got the spelling but no example -> 3, otherwise 4.
+ * A grapheme with no stored examples can't be penalised for examples.
+ */
+export function gradeFromTyping(input: {
+  spellingFound: boolean
+  hasExamples: boolean
+  examplesFound: number
+}): Grade {
+  if (!input.spellingFound) return 1
+  if (input.hasExamples && input.examplesFound === 0) return 3
+  return 4
+}
 
 // ---------- date helpers (ISO date-only strings, no timezone surprises) ----------
 
@@ -127,6 +142,21 @@ export function buildQueue(phonemes: Phoneme[], today: string): QueueCard[] {
   soon.sort((a, b) => a.inDays - b.inDays)
 
   return [...overdue.map((x) => x.card), ...fresh, ...soon.map((x) => x.card)]
+}
+
+/**
+ * Study unit is a whole sound group: the group inherits the priority of its most
+ * urgent grapheme, so we can reuse buildQueue and just dedupe by phoneme.
+ */
+export function buildGroupQueue(phonemes: Phoneme[], today: string): string[] {
+  const seen = new Set<string>()
+  const order: string[] = []
+  for (const card of buildQueue(phonemes, today)) {
+    if (seen.has(card.phonemeId)) continue
+    seen.add(card.phonemeId)
+    order.push(card.phonemeId)
+  }
+  return order
 }
 
 // ---------- aggregate stats ----------

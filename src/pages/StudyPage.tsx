@@ -1,65 +1,45 @@
-import { useEffect, useMemo } from 'react'
-import { Flashcard } from '../components/Flashcard'
+import { useMemo } from 'react'
 import { ProgressBar } from '../components/ProgressBar'
+import { TypingCard } from '../components/TypingCard'
 import { useStore } from '../hooks/useStore'
 import { useStudyQueue } from '../hooks/useStudyQueue'
-import { computeStats, GRADES, type Grade } from '../lib/sm2'
+import { computeStats } from '../lib/sm2'
 
 export function StudyPage() {
   const { data } = useStore()
-  const { card, remaining, reviewed, flipped, flip, answer, restart, today } = useStudyQueue()
-  const stats = useMemo(() => computeStats(data.phonemes, today), [data.phonemes, today])
-
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
-      if (e.code === 'Space') {
-        e.preventDefault()
-        flip()
-        return
-      }
-      const hit = GRADES.find((g) => g.key === e.key)
-      if (hit && flipped) answer(hit.grade as Grade)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [flip, answer, flipped])
+  const session = useStudyQueue()
+  const stats = useMemo(
+    () => computeStats(data.phonemes, session.today),
+    [data.phonemes, session.today],
+  )
 
   return (
     <div className="space-y-5">
       <ProgressBar percent={stats.percent} learned={stats.learned} total={stats.total} />
 
       <div className="flex items-center justify-between gap-2 text-sm text-slate-500 dark:text-slate-400">
-        <span>Xem cách viết, tự đọc thành tiếng, rồi lật thẻ để kiểm tra.</span>
+        <span>Gõ ra tất cả cách viết của âm, rồi gõ từ ví dụ.</span>
         <span className="shrink-0">
-          còn {remaining} · đã ôn {reviewed}
+          còn {session.remaining} · đã ôn {session.reviewed}
         </span>
       </div>
 
-      {card ? (
+      {session.group ? (
         <>
-          <Flashcard
-            phoneme={card.phoneme}
-            grapheme={card.grapheme}
-            flipped={flipped}
-            onFlip={flip}
+          <TypingCard
+            group={session.group}
+            phase={session.phase}
+            outcomes={session.outcomes}
+            rejected={session.rejected}
+            foundCount={session.foundCount}
+            onSubmitSpelling={session.submitSpelling}
+            onSubmitExample={session.submitExample}
+            onCheck={session.check}
+            onCommit={session.commit}
           />
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {GRADES.map((g) => (
-              <button
-                key={g.grade}
-                type="button"
-                disabled={!flipped}
-                onClick={() => answer(g.grade)}
-                className={`rounded-lg px-3 py-2.5 text-sm font-semibold text-white disabled:opacity-30 ${g.color}`}
-              >
-                {g.label} <span className="opacity-70">({g.key})</span>
-              </button>
-            ))}
-          </div>
           <p className="text-center text-xs text-slate-500 dark:text-slate-400">
-            Space = lật thẻ · 1/2/3/4 = Sai/Khó/Tốt/Dễ
-            {!flipped && ' · lật thẻ trước khi đánh giá'}
+            Enter = thêm câu trả lời · Enter khi ô trống = kiểm tra · gõ đúng cách viết + ít nhất 1
+            ví dụ = Tốt, quên ví dụ = Khó, thiếu cách viết = Sai
           </p>
         </>
       ) : (
@@ -72,7 +52,7 @@ export function StudyPage() {
           </p>
           <button
             type="button"
-            onClick={restart}
+            onClick={session.restart}
             className="mt-4 rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500"
           >
             Học lại phiên mới
