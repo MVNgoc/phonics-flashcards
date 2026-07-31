@@ -24,7 +24,9 @@ npm run preview     # xem thử bản build
 ## Cách dùng
 
 - **Học** (`/study`): Space lật thẻ, `1/2/3/4` = Sai / Khó / Tốt / Dễ. Hai chế độ:
-  *Cách viết → âm* và *Âm → cách viết*. Trả lời Sai thì thẻ quay lại cuối phiên.
+  *Cách viết → âm* và *Âm → cách viết*. Trả lời **Sai** hoặc **Khó** thì thẻ quay
+  lại cuối phiên (SM-2 vẫn tính Khó là đúng khi xếp lịch ôn — chỉ phiên hiện tại
+  mới lặp lại).
 - **Quản lý** (`/manage`): CRUD âm / cách viết / từ ví dụ, nhập nhanh, export & import.
 - **Thống kê** (`/stats`): số thẻ cần ôn, % thuộc, top 5 cách viết sai nhiều nhất.
 
@@ -92,6 +94,8 @@ Ghi chú kỹ thuật:
 - Thẻ = một grapheme (cách viết); review state gắn vào grapheme, hai chế độ học
   chỉ đổi mặt trước/sau chứ không nhân đôi tiến độ.
 - Queue ưu tiên: overdue (quá hạn lâu nhất trước) → thẻ mới → due trong 1–3 ngày.
+  Ngưỡng lặp lại trong phiên nằm ở `useStudyQueue.ts` (`grade < 4`), tách rời khỏi
+  ngưỡng pass/fail của SM-2 (`grade >= 3`).
 - Dark mode: class `dark` được set trong `<script>` ở `index.html` trước khi React
   mount nên không bị flash; lưu ở localStorage key `phonics-flashcard:theme`, lần
   đầu theo `prefers-color-scheme`.

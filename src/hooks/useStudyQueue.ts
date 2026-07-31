@@ -10,8 +10,8 @@ export interface ActiveCard extends QueueCard {
 
 /**
  * One study session. The queue is snapshotted when the session starts so
- * rescheduling a card mid-session doesn't reshuffle what's left; a wrong answer
- * pushes the card to the back of this session's queue.
+ * rescheduling a card mid-session doesn't reshuffle what's left; answering
+ * "Sai" or "Khó" pushes the card to the back of this session's queue.
  */
 export function useStudyQueue() {
   const { data, gradeCard } = useStore()
@@ -41,8 +41,9 @@ export function useStudyQueue() {
       gradeCard(current.phonemeId, current.graphemeId, grade, today)
       setReviewed((n) => n + 1)
       setFlipped(false)
-      // Wrong answers come back at the end of this session.
-      setQueue((q) => (grade < 3 ? [...q.slice(1), current] : q.slice(1)))
+      // "Sai" and "Khó" come back at the end of this session. SM-2 scheduling
+      // still treats grade 3 as a pass — this only affects the current session.
+      setQueue((q) => (grade < 4 ? [...q.slice(1), current] : q.slice(1)))
     },
     [queue, gradeCard, today],
   )
