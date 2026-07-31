@@ -1,9 +1,8 @@
-import type { Grapheme, Phoneme, StudyMode } from '../lib/types'
+import type { Grapheme, Phoneme } from '../lib/types'
 
 interface Props {
   phoneme: Phoneme
   grapheme: Grapheme
-  mode: StudyMode
   flipped: boolean
   onFlip: () => void
 }
@@ -13,55 +12,8 @@ const faceClasses =
   'border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800 ' +
   '[backface-visibility:hidden]'
 
-export function Flashcard({ phoneme, grapheme, mode, flipped, onFlip }: Props) {
-  const spellingFirst = mode === 'spelling-to-sound'
-
-  const front = spellingFirst ? (
-    <>
-      <span className="text-6xl font-bold tracking-wide">{grapheme.spelling}</span>
-      <span className="text-sm text-slate-500 dark:text-slate-400">Âm này đọc là gì?</span>
-    </>
-  ) : (
-    <>
-      <span className="text-6xl font-bold">{phoneme.ipa}</span>
-      <span className="text-sm text-slate-500 dark:text-slate-400">
-        Âm này viết bằng những cách nào?
-      </span>
-    </>
-  )
-
-  const back = (
-    <>
-      <span className="text-5xl font-bold">{spellingFirst ? phoneme.ipa : grapheme.spelling}</span>
-      <span className="text-xs uppercase tracking-widest text-slate-400">
-        {phoneme.type === 'vowel' ? 'nguyên âm' : 'phụ âm'}
-        {spellingFirst ? '' : ` · ${phoneme.ipa}`}
-      </span>
-      {grapheme.examples.length > 0 && (
-        <div className="flex flex-wrap justify-center gap-2">
-          {grapheme.examples.map((ex) => (
-            <span
-              key={ex}
-              className="rounded-full bg-slate-100 px-3 py-1 text-sm dark:bg-slate-700"
-            >
-              {ex}
-            </span>
-          ))}
-        </div>
-      )}
-      {!spellingFirst && phoneme.graphemes.length > 1 && (
-        <p className="text-xs text-slate-500 dark:text-slate-400">
-          Các cách viết khác: {phoneme.graphemes
-            .filter((g) => g.id !== grapheme.id)
-            .map((g) => g.spelling)
-            .join(', ')}
-        </p>
-      )}
-      {phoneme.note && (
-        <p className="text-xs italic text-slate-500 dark:text-slate-400">{phoneme.note}</p>
-      )}
-    </>
-  )
+export function Flashcard({ phoneme, grapheme, flipped, onFlip }: Props) {
+  const siblings = phoneme.graphemes.filter((g) => g.id !== grapheme.id).map((g) => g.spelling)
 
   return (
     <button
@@ -75,8 +27,37 @@ export function Flashcard({ phoneme, grapheme, mode, flipped, onFlip }: Props) {
           flipped ? '[transform:rotateY(180deg)]' : ''
         }`}
       >
-        <div className={faceClasses}>{front}</div>
-        <div className={`${faceClasses} [transform:rotateY(180deg)]`}>{back}</div>
+        <div className={faceClasses}>
+          <span className="text-6xl font-bold tracking-wide">{grapheme.spelling}</span>
+          <span className="text-sm text-slate-500 dark:text-slate-400">Âm này đọc thế nào?</span>
+        </div>
+
+        <div className={`${faceClasses} [transform:rotateY(180deg)]`}>
+          <span className="text-3xl font-bold tracking-wide">{grapheme.spelling}</span>
+          {grapheme.examples.length > 0 ? (
+            <div className="flex flex-wrap justify-center gap-2">
+              {grapheme.examples.map((ex) => (
+                <span
+                  key={ex}
+                  className="rounded-full bg-slate-100 px-3 py-1 text-lg font-medium dark:bg-slate-700"
+                >
+                  {ex}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <span className="text-sm text-slate-400">Chưa có từ ví dụ</span>
+          )}
+          {phoneme.note && <p className="text-base font-medium">{phoneme.note}</p>}
+          <span className="text-xs uppercase tracking-widest text-slate-400">
+            {phoneme.type === 'vowel' ? 'nguyên âm' : 'phụ âm'}
+          </span>
+          {siblings.length > 0 && (
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Cùng âm: {siblings.join(', ')}
+            </p>
+          )}
+        </div>
       </div>
     </button>
   )

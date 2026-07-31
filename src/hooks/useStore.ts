@@ -6,15 +6,15 @@ import { newReviewState, review, type Grade } from '../lib/sm2'
 import { seedData } from '../lib/seed'
 
 export interface ParsedPhoneme {
-  ipa: string
+  note: string
   type: PhonemeType
   graphemes: { spelling: string; examples: string[] }[]
 }
 
 interface Store {
   data: AppData
-  addPhoneme: (ipa: string, type: PhonemeType, note?: string) => void
-  updatePhoneme: (id: string, patch: Partial<Pick<Phoneme, 'ipa' | 'type' | 'note'>>) => void
+  addPhoneme: (type: PhonemeType, note?: string) => void
+  updatePhoneme: (id: string, patch: Partial<Pick<Phoneme, 'type' | 'note'>>) => void
   deletePhoneme: (id: string) => void
   addGrapheme: (phonemeId: string, spelling: string, examples?: string[]) => void
   updateGrapheme: (
@@ -42,10 +42,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setData((d) => ({ ...d, phonemes: d.phonemes.map((p) => (p.id === id ? fn(p) : p)) }))
   }, [])
 
-  const addPhoneme = useCallback((ipa: string, type: PhonemeType, note?: string) => {
+  const addPhoneme = useCallback((type: PhonemeType, note?: string) => {
     setData((d) => ({
       ...d,
-      phonemes: [...d.phonemes, { id: uid(), ipa, type, note, graphemes: [] }],
+      phonemes: [...d.phonemes, { id: uid(), type, note, graphemes: [] }],
     }))
   }, [])
 
@@ -96,16 +96,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [mapPhoneme],
   )
 
-  /** Bulk import: merge by IPA, merge graphemes by spelling, union the examples. */
+  /**
+   * Bulk import: merge groups by note (blank note always creates a new group),
+   * merge graphemes by spelling, union the examples.
+   */
   const mergeParsed = useCallback((parsed: ParsedPhoneme[]) => {
     setData((d) => {
       const phonemes = [...d.phonemes]
       for (const inc of parsed) {
-        const idx = phonemes.findIndex((p) => p.ipa === inc.ipa)
+        const key = inc.note.trim().toLowerCase()
+        const idx = key === '' ? -1 : phonemes.findIndex((p) => (p.note ?? '').trim().toLowerCase() === key)
         if (idx === -1) {
           phonemes.push({
             id: uid(),
-            ipa: inc.ipa,
+            note: inc.note.trim() || undefined,
             type: inc.type,
             graphemes: inc.graphemes.map((g) => ({
               id: uid(),

@@ -1,22 +1,20 @@
 import type { AppData, Phoneme, PhonemeType } from './types'
 import { newReviewState } from './sm2'
 
-type SeedSpec = [ipa: string, type: PhonemeType, note: string, graphemes: [string, string[]][]]
+type SeedSpec = [note: string, type: PhonemeType, graphemes: [string, string[]][]]
 
 const SEED: SeedSpec[] = [
   [
-    '/æ/',
+    'a ngắn (cat)',
     'vowel',
-    'Nguyên âm ngắn, miệng mở rộng',
     [
       ['a', ['cat', 'hat', 'map']],
       ['ai', ['plaid']],
     ],
   ],
   [
-    '/iː/',
+    'i dài (see)',
     'vowel',
-    'Nguyên âm dài',
     [
       ['ee', ['see', 'tree']],
       ['ea', ['eat', 'sea']],
@@ -25,9 +23,8 @@ const SEED: SeedSpec[] = [
     ],
   ],
   [
-    '/ɪ/',
+    'i ngắn (sit)',
     'vowel',
-    'Nguyên âm ngắn',
     [
       ['i', ['sit', 'big']],
       ['y', ['gym', 'myth']],
@@ -35,9 +32,8 @@ const SEED: SeedSpec[] = [
     ],
   ],
   [
-    '/oʊ/',
+    'ô đôi (go)',
     'vowel',
-    'Nguyên âm đôi',
     [
       ['o', ['go', 'no']],
       ['oa', ['boat', 'coat']],
@@ -46,9 +42,8 @@ const SEED: SeedSpec[] = [
     ],
   ],
   [
-    '/ɜːr/',
+    'ơ + r (her)',
     'vowel',
-    'Nguyên âm + r',
     [
       ['er', ['her', 'term']],
       ['ir', ['bird', 'girl']],
@@ -57,9 +52,8 @@ const SEED: SeedSpec[] = [
     ],
   ],
   [
-    '/k/',
+    'âm k (cat)',
     'consonant',
-    'Phụ âm tắc, vô thanh',
     [
       ['c', ['cat', 'cup']],
       ['k', ['kite', 'kid']],
@@ -68,9 +62,8 @@ const SEED: SeedSpec[] = [
     ],
   ],
   [
-    '/f/',
+    'âm f (fan)',
     'consonant',
-    'Phụ âm xát, vô thanh',
     [
       ['f', ['fan', 'fish']],
       ['ph', ['phone', 'graph']],
@@ -78,9 +71,8 @@ const SEED: SeedSpec[] = [
     ],
   ],
   [
-    '/ʃ/',
+    'âm sh (ship)',
     'consonant',
-    'Phụ âm xát, vô thanh',
     [
       ['sh', ['ship', 'fish']],
       ['ti', ['nation', 'station']],
@@ -89,9 +81,8 @@ const SEED: SeedSpec[] = [
     ],
   ],
   [
-    '/dʒ/',
+    'âm j (jam)',
     'consonant',
-    'Phụ âm tắc-xát, hữu thanh',
     [
       ['j', ['jam', 'jump']],
       ['g', ['giant', 'gym']],
@@ -99,20 +90,12 @@ const SEED: SeedSpec[] = [
       ['ge', ['large', 'page']],
     ],
   ],
-  [
-    '/θ/',
-    'consonant',
-    'Phụ âm xát, vô thanh (th không rung)',
-    [
-      ['th', ['think', 'bath', 'three']],
-    ],
-  ],
+  ['âm th không rung (think)', 'consonant', [['th', ['think', 'bath', 'three']]]],
 ]
 
 export function seedData(): AppData {
-  const phonemes: Phoneme[] = SEED.map(([ipa, type, note, graphemes], i) => ({
+  const phonemes: Phoneme[] = SEED.map(([note, type, graphemes], i) => ({
     id: `seed-p${i}`,
-    ipa,
     type,
     note,
     graphemes: graphemes.map(([spelling, examples], j) => ({

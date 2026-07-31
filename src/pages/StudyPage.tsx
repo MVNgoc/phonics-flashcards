@@ -1,19 +1,12 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Flashcard } from '../components/Flashcard'
 import { ProgressBar } from '../components/ProgressBar'
 import { useStore } from '../hooks/useStore'
 import { useStudyQueue } from '../hooks/useStudyQueue'
 import { computeStats, GRADES, type Grade } from '../lib/sm2'
-import type { StudyMode } from '../lib/types'
-
-const MODES: { value: StudyMode; label: string }[] = [
-  { value: 'spelling-to-sound', label: 'Cách viết → âm' },
-  { value: 'sound-to-spelling', label: 'Âm → cách viết' },
-]
 
 export function StudyPage() {
   const { data } = useStore()
-  const [mode, setMode] = useState<StudyMode>('spelling-to-sound')
   const { card, remaining, reviewed, flipped, flip, answer, restart, today } = useStudyQueue()
   const stats = useMemo(() => computeStats(data.phonemes, today), [data.phonemes, today])
 
@@ -36,24 +29,9 @@ export function StudyPage() {
     <div className="space-y-5">
       <ProgressBar percent={stats.percent} learned={stats.learned} total={stats.total} />
 
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex gap-2">
-          {MODES.map((m) => (
-            <button
-              key={m.value}
-              type="button"
-              onClick={() => setMode(m.value)}
-              className={`rounded-lg border px-3 py-1.5 text-sm font-medium ${
-                mode === m.value
-                  ? 'border-sky-600 bg-sky-600 text-white'
-                  : 'border-slate-300 dark:border-slate-600'
-              }`}
-            >
-              {m.label}
-            </button>
-          ))}
-        </div>
-        <span className="text-sm text-slate-500 dark:text-slate-400">
+      <div className="flex items-center justify-between gap-2 text-sm text-slate-500 dark:text-slate-400">
+        <span>Xem cách viết, tự đọc thành tiếng, rồi lật thẻ để kiểm tra.</span>
+        <span className="shrink-0">
           còn {remaining} · đã ôn {reviewed}
         </span>
       </div>
@@ -63,7 +41,6 @@ export function StudyPage() {
           <Flashcard
             phoneme={card.phoneme}
             grapheme={card.grapheme}
-            mode={mode}
             flipped={flipped}
             onFlip={flip}
           />

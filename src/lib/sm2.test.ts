@@ -122,7 +122,7 @@ describe('buildQueue', () => {
   const phonemes: Phoneme[] = [
     {
       id: 'p1',
-      ipa: '/æ/',
+      note: 'a ngắn',
       type: 'vowel',
       graphemes: [
         { id: 'soon2', spelling: 'a', examples: [], review: state({ nextDue: '2026-08-02' }) },
@@ -132,7 +132,7 @@ describe('buildQueue', () => {
     },
     {
       id: 'p2',
-      ipa: '/b/',
+      note: 'âm b',
       type: 'consonant',
       graphemes: [
         { id: 'late1', spelling: 'b', examples: [], review: state({ nextDue: '2026-07-30' }) },
@@ -162,7 +162,7 @@ describe('computeStats', () => {
   const phonemes: Phoneme[] = [
     {
       id: 'p1',
-      ipa: '/æ/',
+      note: 'a ngắn',
       type: 'vowel',
       graphemes: [
         {
@@ -203,6 +203,7 @@ describe('computeStats', () => {
   it('ranks the most-missed graphemes', () => {
     expect(s.worst.map((w) => w.spelling)).toEqual(['a', 'ai'])
     expect(s.worst[0].wrongCount).toBe(3)
+    expect(s.worst[0].group).toBe('a ngắn')
   })
 
   it('reports 0% for an empty deck instead of NaN', () => {

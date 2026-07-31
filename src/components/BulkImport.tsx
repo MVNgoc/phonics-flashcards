@@ -2,15 +2,15 @@ import { useState } from 'react'
 import type { PhonemeType } from '../lib/types'
 import { useStore, type ParsedPhoneme } from '../hooks/useStore'
 
-const PLACEHOLDER = `/æ/ | vowel | a: cat, hat | ai: plaid
-/f/ | consonant | f: fan | ph: phone, graph`
+const PLACEHOLDER = `vowel | a ngắn (cat) | a: cat, hat | ai: plaid
+consonant | âm f (fan) | f: fan | ph: phone, graph`
 
 interface ParseResult {
   parsed: ParsedPhoneme[]
   errors: string[]
 }
 
-/** One phoneme per line: `IPA | vowel|consonant | spelling: ex1, ex2 | ...` */
+/** One group per line: `vowel|consonant | ghi chú | spelling: ex1, ex2 | ...` */
 export function parseBulk(text: string): ParseResult {
   const parsed: ParsedPhoneme[] = []
   const errors: string[] = []
@@ -20,14 +20,20 @@ export function parseBulk(text: string): ParseResult {
     if (!line || line.startsWith('#')) return
 
     const parts = line.split('|').map((p) => p.trim())
-    if (parts.length < 2) {
-      errors.push(`Dòng ${i + 1}: cần ít nhất "IPA | vowel"`)
+    if (parts.length < 3) {
+      errors.push(`Dòng ${i + 1}: cần "vowel | ghi chú | cách viết: ví dụ"`)
       return
     }
 
-    const [ipa, rawType, ...graphemeParts] = parts
+    const [rawType, note, ...graphemeParts] = parts
     const typeWord = rawType.toLowerCase()
-    const type: PhonemeType = typeWord.startsWith('v') || typeWord.startsWith('n') ? 'vowel' : 'consonant'
+    if (!typeWord.startsWith('v') && !typeWord.startsWith('c') && !typeWord.startsWith('n')
+        && !typeWord.startsWith('p')) {
+      errors.push(`Dòng ${i + 1}: cột đầu phải là vowel hoặc consonant`)
+      return
+    }
+    const type: PhonemeType =
+      typeWord.startsWith('v') || typeWord.startsWith('n') ? 'vowel' : 'consonant'
 
     const graphemes = graphemeParts
       .filter(Boolean)
@@ -51,7 +57,7 @@ export function parseBulk(text: string): ParseResult {
       return
     }
 
-    parsed.push({ ipa, type, graphemes })
+    parsed.push({ note, type, graphemes })
   })
 
   return { parsed, errors }
@@ -68,7 +74,7 @@ export function BulkImport() {
   function submit() {
     if (parsed.length === 0) return
     mergeParsed(parsed)
-    setDone(`Đã nhập ${parsed.length} âm / ${graphemeCount} cách viết.`)
+    setDone(`Đã nhập ${parsed.length} nhóm âm / ${graphemeCount} cách viết.`)
     setText('')
   }
 
@@ -76,7 +82,8 @@ export function BulkImport() {
     <section className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
       <h2 className="mb-1 font-semibold">Nhập nhanh</h2>
       <p className="mb-3 text-sm text-slate-500 dark:text-slate-400">
-        Mỗi dòng một âm. Âm/cách viết đã có sẽ được gộp thêm, không ghi đè.
+        Mỗi dòng một nhóm âm: <code>vowel | ghi chú | cách viết: ví dụ, ví dụ | ...</code>. Nhóm
+        trùng ghi chú sẽ được gộp thêm, không ghi đè. Ghi chú để trống thì luôn tạo nhóm mới.
       </p>
       <textarea
         value={text}
@@ -96,7 +103,7 @@ export function BulkImport() {
           disabled={parsed.length === 0}
           className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500 disabled:opacity-40"
         >
-          Nhập {parsed.length > 0 ? `${parsed.length} âm` : ''}
+          Nhập {parsed.length > 0 ? `${parsed.length} nhóm` : ''}
         </button>
         {graphemeCount > 0 && (
           <span className="text-sm text-slate-500 dark:text-slate-400">

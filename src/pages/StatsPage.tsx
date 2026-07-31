@@ -36,10 +36,12 @@ export function StatsPage() {
         ) : (
           <ul className="space-y-2">
             {stats.worst.map((w) => (
-              <li key={`${w.phonemeIpa}-${w.spelling}`} className="flex items-center gap-3">
-                <span className="w-28 shrink-0 truncate text-sm font-medium">
-                  {w.spelling}{' '}
-                  <span className="text-slate-400">{w.phonemeIpa}</span>
+              <li key={`${w.group}-${w.spelling}`} className="flex items-center gap-3">
+                <span
+                  className="w-36 shrink-0 truncate text-sm font-medium"
+                  title={w.group ? `${w.spelling} — ${w.group}` : w.spelling}
+                >
+                  {w.spelling} <span className="text-slate-400">{w.group}</span>
                 </span>
                 <span className="h-5 flex-1 overflow-hidden rounded bg-slate-100 dark:bg-slate-800">
                   <span

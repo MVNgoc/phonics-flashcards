@@ -136,7 +136,7 @@ export interface Stats {
   learned: number
   percent: number
   dueToday: number
-  worst: { phonemeIpa: string; spelling: string; wrongCount: number }[]
+  worst: { group: string; spelling: string; wrongCount: number }[]
 }
 
 export function computeStats(phonemes: Phoneme[], today: string): Stats {
@@ -150,7 +150,7 @@ export function computeStats(phonemes: Phoneme[], today: string): Stats {
     .sort((a, b) => b.g.review.wrongCount - a.g.review.wrongCount)
     .slice(0, 5)
     .map((x) => ({
-      phonemeIpa: x.p.ipa,
+      group: x.p.note ?? '',
       spelling: x.g.spelling,
       wrongCount: x.g.review.wrongCount,
     }))

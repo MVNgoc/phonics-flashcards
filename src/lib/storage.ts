@@ -3,15 +3,23 @@ import { seedData } from './seed'
 
 export const STORAGE_KEY = 'phonics-flashcard:v1'
 export const THEME_KEY = 'phonics-flashcard:theme'
-export const CURRENT_VERSION = 1
+export const CURRENT_VERSION = 2
 
 export function uid(): string {
   return Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4)
 }
 
-/** Bring older payloads up to CURRENT_VERSION. Only one version so far. */
-function migrate(stored: StoredState): AppData {
-  return stored.data
+/** Bring older payloads up to CURRENT_VERSION. v1 had an `ipa` field; v2 drops it. */
+export function migrate(stored: StoredState): AppData {
+  if (stored.version >= 2) return stored.data
+  return {
+    ...stored.data,
+    phonemes: stored.data.phonemes.map((p) => {
+      const { ipa, ...rest } = p as typeof p & { ipa?: string }
+      void ipa
+      return rest
+    }),
+  }
 }
 
 export function loadData(): AppData {

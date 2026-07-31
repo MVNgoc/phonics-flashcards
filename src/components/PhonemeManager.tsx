@@ -9,26 +9,17 @@ const input =
 
 function AddPhonemeForm() {
   const { addPhoneme } = useStore()
-  const [ipa, setIpa] = useState('')
   const [type, setType] = useState<PhonemeType>('vowel')
   const [note, setNote] = useState('')
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
-    if (!ipa.trim()) return
-    addPhoneme(ipa.trim(), type, note.trim() || undefined)
-    setIpa('')
+    addPhoneme(type, note.trim() || undefined)
     setNote('')
   }
 
   return (
     <form onSubmit={submit} className="flex flex-wrap items-center gap-2">
-      <input
-        value={ipa}
-        onChange={(e) => setIpa(e.target.value)}
-        placeholder="IPA, vd /æ/"
-        className={`${input} w-32`}
-      />
       <select
         value={type}
         onChange={(e) => setType(e.target.value as PhonemeType)}
@@ -40,11 +31,11 @@ function AddPhonemeForm() {
       <input
         value={note}
         onChange={(e) => setNote(e.target.value)}
-        placeholder="Ghi chú (tuỳ chọn)"
+        placeholder="Ghi chú, vd: a ngắn (cat)"
         className={`${input} flex-1 min-w-40`}
       />
       <button type="submit" className={`${btn} bg-sky-600 text-white hover:bg-sky-500`}>
-        Thêm âm
+        Thêm nhóm âm
       </button>
     </form>
   )
@@ -152,11 +143,6 @@ function PhonemeCard({ phoneme }: { phoneme: Phoneme }) {
   return (
     <article className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <input
-          value={phoneme.ipa}
-          onChange={(e) => updatePhoneme(phoneme.id, { ipa: e.target.value })}
-          className={`${input} w-28 text-lg font-bold`}
-        />
         <select
           value={phoneme.type}
           onChange={(e) => updatePhoneme(phoneme.id, { type: e.target.value as PhonemeType })}
@@ -168,12 +154,12 @@ function PhonemeCard({ phoneme }: { phoneme: Phoneme }) {
         <input
           value={phoneme.note ?? ''}
           onChange={(e) => updatePhoneme(phoneme.id, { note: e.target.value || undefined })}
-          placeholder="Ghi chú"
-          className={`${input} flex-1 min-w-40`}
+          placeholder="Ghi chú, vd: a ngắn (cat)"
+          className={`${input} flex-1 min-w-40 font-medium`}
         />
         {confirming ? (
           <span className="flex items-center gap-2 text-sm">
-            Xoá cả âm này?
+            Xoá cả nhóm này?
             <button
               type="button"
               onClick={() => deletePhoneme(phoneme.id)}
@@ -191,7 +177,7 @@ function PhonemeCard({ phoneme }: { phoneme: Phoneme }) {
             onClick={() => setConfirming(true)}
             className={`${btn} text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950`}
           >
-            Xoá âm
+            Xoá nhóm
           </button>
         )}
       </div>
@@ -243,12 +229,12 @@ export function PhonemeManager() {
           </button>
         ))}
         <span className="self-center text-sm text-slate-500 dark:text-slate-400">
-          {list.length} âm
+          {list.length} nhóm âm
         </span>
       </div>
 
       {list.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">Chưa có âm nào.</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">Chưa có nhóm âm nào.</p>
       ) : (
         <div className="space-y-3">
           {list.map((p) => (

@@ -18,9 +18,12 @@ export interface Grapheme {
   review: ReviewState
 }
 
+/**
+ * A group of spellings that share one sound. There is no IPA field — the group
+ * is labelled by `note` (free text, optional) and identified by it on import.
+ */
 export interface Phoneme {
   id: string
-  ipa: string
   type: PhonemeType
   note?: string
   graphemes: Grapheme[]
@@ -35,5 +38,3 @@ export interface StoredState {
   version: number
   data: AppData
 }
-
-export type StudyMode = 'spelling-to-sound' | 'sound-to-spelling'
