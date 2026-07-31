@@ -24,13 +24,13 @@ export function StatsPage() {
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Tile label="cần ôn hôm nay" value={stats.dueToday} />
-        <Tile label="tổng cách viết" value={stats.total} />
+        <Tile label="tổng trường hợp" value={stats.total} />
         <Tile label="đã thuộc" value={stats.learned} />
         <Tile label="tiến độ" value={`${stats.percent}%`} />
       </div>
 
       <section>
-        <h2 className="mb-3 font-semibold">Top 5 sai nhiều nhất</h2>
+        <h2 className="mb-3 font-semibold">Top 5 trường hợp sai nhiều nhất</h2>
         {stats.worst.length === 0 ? (
           <p className="text-sm text-slate-500 dark:text-slate-400">Chưa có lần sai nào.</p>
         ) : (

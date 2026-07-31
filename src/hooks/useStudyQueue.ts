@@ -16,9 +16,9 @@ export interface GraphemeOutcome {
 }
 
 /**
- * Một phiên học. Đơn vị là một nhóm âm và luồng gõ xen kẽ:
- * gõ đúng một cách viết -> hỏi ngay ví dụ cho đúng cách viết đó -> quay lại gõ
- * cách viết tiếp. Gõ sai thì không hỏi ví dụ. Điểm suy ra từ những gì đã gõ.
+ * Một phiên học. Đơn vị là một âm và luồng gõ xen kẽ:
+ * gõ đúng một trường hợp -> hỏi ngay ví dụ cho đúng trường hợp đó -> quay lại gõ
+ * trường hợp tiếp. Gõ sai thì không hỏi ví dụ. Điểm suy ra từ những gì đã gõ.
  */
 export function useStudyQueue() {
   const { data, gradeCard } = useStore()
@@ -26,7 +26,7 @@ export function useStudyQueue() {
 
   const [queue, setQueue] = useState<string[]>(() => buildGroupQueue(data.phonemes, today))
   const [phase, setPhase] = useState<Phase>('answer')
-  /** Cách viết đang được hỏi ví dụ; null = đang hỏi cách viết. */
+  /** Trường hợp đang được hỏi ví dụ; null = đang hỏi trường hợp. */
   const [pendingId, setPendingId] = useState<string | null>(null)
   const [found, setFound] = useState<string[]>([])
   const [rejected, setRejected] = useState<string[]>([])
@@ -49,7 +49,7 @@ export function useStudyQueue() {
 
       setFound([...found, hit.id])
       if (hit.examples.length > 0) {
-        // Đúng -> hỏi ví dụ cho chính cách viết này.
+        // Đúng -> hỏi ví dụ cho chính trường hợp này.
         setPendingId(hit.id)
       } else if (found.length + 1 === group.graphemes.length) {
         setPhase('summary')
@@ -70,7 +70,7 @@ export function useStudyQueue() {
 
       setExamplesFound((m) => ({ ...m, [pending.id]: [...already, hit] }))
       if (already.length + 1 === pending.examples.length) {
-        // Đã gõ hết ví dụ của cách viết này -> quay lại gõ cách viết.
+        // Đã gõ hết ví dụ của trường hợp này -> quay lại gõ trường hợp.
         setPendingId(null)
         if (found.length === group.graphemes.length) setPhase('summary')
       }
@@ -79,7 +79,7 @@ export function useStudyQueue() {
     [group, pending, examplesFound, found],
   )
 
-  /** Thôi không gõ thêm ví dụ cho cách viết hiện tại, quay lại gõ cách viết. */
+  /** Thôi không gõ thêm ví dụ cho trường hợp hiện tại, quay lại gõ trường hợp. */
   const skipExamples = useCallback(() => {
     if (!group) return
     setPendingId(null)
@@ -92,7 +92,7 @@ export function useStudyQueue() {
     setPhase('summary')
   }, [])
 
-  /** Kết quả từng cách viết, cập nhật ngay theo những gì đã gõ. */
+  /** Kết quả từng trường hợp, cập nhật ngay theo những gì đã gõ. */
   const outcomes: GraphemeOutcome[] = useMemo(() => {
     if (!group) return []
     return group.graphemes.map((g) => {

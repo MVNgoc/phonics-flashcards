@@ -35,7 +35,7 @@ function AddPhonemeForm() {
         className={`${input} flex-1 min-w-40`}
       />
       <button type="submit" className={`${btn} bg-sky-600 text-white hover:bg-sky-500`}>
-        Thêm nhóm âm
+        Thêm âm
       </button>
     </form>
   )
@@ -122,7 +122,7 @@ function GraphemeRow({ phoneme, grapheme }: { phoneme: Phoneme; grapheme: Graphe
         onClick={() => deleteGrapheme(phoneme.id, grapheme.id)}
         className={`${btn} self-start text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950`}
       >
-        Xoá cách viết
+        Xoá trường hợp
       </button>
     </li>
   )
@@ -159,7 +159,7 @@ function PhonemeCard({ phoneme }: { phoneme: Phoneme }) {
         />
         {confirming ? (
           <span className="flex items-center gap-2 text-sm">
-            Xoá cả nhóm này?
+            Xoá cả âm này?
             <button
               type="button"
               onClick={() => deletePhoneme(phoneme.id)}
@@ -177,7 +177,7 @@ function PhonemeCard({ phoneme }: { phoneme: Phoneme }) {
             onClick={() => setConfirming(true)}
             className={`${btn} text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950`}
           >
-            Xoá nhóm
+            Xoá âm
           </button>
         )}
       </div>
@@ -192,11 +192,11 @@ function PhonemeCard({ phoneme }: { phoneme: Phoneme }) {
         <input
           value={spelling}
           onChange={(e) => setSpelling(e.target.value)}
-          placeholder="Cách viết mới, vd ough"
+          placeholder="Trường hợp mới, vd ough"
           className={`${input} w-48`}
         />
         <button type="submit" className={`${btn} border border-slate-300 dark:border-slate-600`}>
-          + Cách viết
+          + Trường hợp
         </button>
       </form>
     </article>
@@ -229,12 +229,12 @@ export function PhonemeManager() {
           </button>
         ))}
         <span className="self-center text-sm text-slate-500 dark:text-slate-400">
-          {list.length} nhóm âm
+          {list.length} âm
         </span>
       </div>
 
       {list.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">Chưa có nhóm âm nào.</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">Chưa có âm nào.</p>
       ) : (
         <div className="space-y-3">
           {list.map((p) => (

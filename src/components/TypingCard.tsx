@@ -84,7 +84,7 @@ function GroupHeader({ group }: { group: Phoneme }) {
   )
 }
 
-/** Những cách viết đã gõ đúng, kèm ví dụ đã gõ được. */
+/** Những trường hợp đã gõ đúng, kèm ví dụ đã gõ được. */
 function FoundList({ outcomes }: { outcomes: GraphemeOutcome[] }) {
   const done = outcomes.filter((o) => o.spellingFound)
   if (done.length === 0) return null

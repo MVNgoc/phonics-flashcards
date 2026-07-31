@@ -53,7 +53,7 @@ export function parseBulk(text: string): ParseResult {
       .filter((g) => g.spelling.length > 0)
 
     if (graphemes.length === 0) {
-      errors.push(`Dòng ${i + 1}: không có cách viết nào`)
+      errors.push(`Dòng ${i + 1}: không có trường hợp nào`)
       return
     }
 
@@ -74,7 +74,7 @@ export function BulkImport() {
   function submit() {
     if (parsed.length === 0) return
     mergeParsed(parsed)
-    setDone(`Đã nhập ${parsed.length} nhóm âm / ${graphemeCount} cách viết.`)
+    setDone(`Đã nhập ${parsed.length} âm / ${graphemeCount} trường hợp.`)
     setText('')
   }
 
@@ -83,7 +83,7 @@ export function BulkImport() {
       <h2 className="mb-1 font-semibold">Nhập nhanh</h2>
       <p className="mb-3 text-sm text-slate-500 dark:text-slate-400">
         Mỗi dòng một âm: <code>vowel | âm | trường hợp: ví dụ, ví dụ | ...</code>. Âm trùng nhãn
-        sẽ được gộp thêm, không ghi đè. Nhãn để trống thì luôn tạo nhóm mới.
+        sẽ được gộp thêm, không ghi đè. Nhãn để trống thì luôn tạo âm mới.
       </p>
       <textarea
         value={text}
@@ -103,11 +103,11 @@ export function BulkImport() {
           disabled={parsed.length === 0}
           className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500 disabled:opacity-40"
         >
-          Nhập {parsed.length > 0 ? `${parsed.length} nhóm` : ''}
+          Nhập {parsed.length > 0 ? `${parsed.length} âm` : ''}
         </button>
         {graphemeCount > 0 && (
           <span className="text-sm text-slate-500 dark:text-slate-400">
-            {graphemeCount} cách viết sẽ được thêm/gộp
+            {graphemeCount} trường hợp sẽ được thêm/gộp
           </span>
         )}
         {done && <span className="text-sm text-emerald-600 dark:text-emerald-400">{done}</span>}

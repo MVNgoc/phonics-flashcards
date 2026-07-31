@@ -10,7 +10,7 @@ export function ProgressBar({ percent, learned, total }: Props) {
       <div className="mb-1 flex items-baseline justify-between text-sm">
         <span className="font-medium">Đã thuộc {percent}%</span>
         <span className="text-slate-500 dark:text-slate-400">
-          {learned}/{total} cách viết
+          {learned}/{total} trường hợp
         </span>
       </div>
       <div
