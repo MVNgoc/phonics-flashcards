@@ -1,0 +1,58 @@
+import { useMemo } from 'react'
+import { ProgressBar } from '../components/ProgressBar'
+import { useStore } from '../hooks/useStore'
+import { computeStats, todayISO } from '../lib/sm2'
+
+function Tile({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+      <div className="text-3xl font-bold">{value}</div>
+      <div className="text-sm text-slate-500 dark:text-slate-400">{label}</div>
+    </div>
+  )
+}
+
+export function StatsPage() {
+  const { data } = useStore()
+  const today = todayISO()
+  const stats = useMemo(() => computeStats(data.phonemes, today), [data.phonemes, today])
+  const maxWrong = stats.worst[0]?.wrongCount ?? 1
+
+  return (
+    <div className="space-y-6">
+      <ProgressBar percent={stats.percent} learned={stats.learned} total={stats.total} />
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Tile label="cần ôn hôm nay" value={stats.dueToday} />
+        <Tile label="tổng cách viết" value={stats.total} />
+        <Tile label="đã thuộc" value={stats.learned} />
+        <Tile label="tiến độ" value={`${stats.percent}%`} />
+      </div>
+
+      <section>
+        <h2 className="mb-3 font-semibold">Top 5 sai nhiều nhất</h2>
+        {stats.worst.length === 0 ? (
+          <p className="text-sm text-slate-500 dark:text-slate-400">Chưa có lần sai nào.</p>
+        ) : (
+          <ul className="space-y-2">
+            {stats.worst.map((w) => (
+              <li key={`${w.phonemeIpa}-${w.spelling}`} className="flex items-center gap-3">
+                <span className="w-28 shrink-0 truncate text-sm font-medium">
+                  {w.spelling}{' '}
+                  <span className="text-slate-400">{w.phonemeIpa}</span>
+                </span>
+                <span className="h-5 flex-1 overflow-hidden rounded bg-slate-100 dark:bg-slate-800">
+                  <span
+                    className="block h-full rounded bg-rose-500"
+                    style={{ width: `${(w.wrongCount / maxWrong) * 100}%` }}
+                  />
+                </span>
+                <span className="w-8 text-right text-sm tabular-nums">{w.wrongCount}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
+  )
+}

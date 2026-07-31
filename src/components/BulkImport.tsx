@@ -1,0 +1,117 @@
+import { useState } from 'react'
+import type { PhonemeType } from '../lib/types'
+import { useStore, type ParsedPhoneme } from '../hooks/useStore'
+
+const PLACEHOLDER = `/æ/ | vowel | a: cat, hat | ai: plaid
+/f/ | consonant | f: fan | ph: phone, graph`
+
+interface ParseResult {
+  parsed: ParsedPhoneme[]
+  errors: string[]
+}
+
+/** One phoneme per line: `IPA | vowel|consonant | spelling: ex1, ex2 | ...` */
+export function parseBulk(text: string): ParseResult {
+  const parsed: ParsedPhoneme[] = []
+  const errors: string[] = []
+
+  text.split('\n').forEach((rawLine, i) => {
+    const line = rawLine.trim()
+    if (!line || line.startsWith('#')) return
+
+    const parts = line.split('|').map((p) => p.trim())
+    if (parts.length < 2) {
+      errors.push(`Dòng ${i + 1}: cần ít nhất "IPA | vowel"`)
+      return
+    }
+
+    const [ipa, rawType, ...graphemeParts] = parts
+    const typeWord = rawType.toLowerCase()
+    const type: PhonemeType = typeWord.startsWith('v') || typeWord.startsWith('n') ? 'vowel' : 'consonant'
+
+    const graphemes = graphemeParts
+      .filter(Boolean)
+      .map((chunk) => {
+        const colon = chunk.indexOf(':')
+        const spelling = (colon === -1 ? chunk : chunk.slice(0, colon)).trim()
+        const examples =
+          colon === -1
+            ? []
+            : chunk
+                .slice(colon + 1)
+                .split(',')
+                .map((w) => w.trim())
+                .filter(Boolean)
+        return { spelling, examples }
+      })
+      .filter((g) => g.spelling.length > 0)
+
+    if (graphemes.length === 0) {
+      errors.push(`Dòng ${i + 1}: không có cách viết nào`)
+      return
+    }
+
+    parsed.push({ ipa, type, graphemes })
+  })
+
+  return { parsed, errors }
+}
+
+export function BulkImport() {
+  const { mergeParsed } = useStore()
+  const [text, setText] = useState('')
+  const [done, setDone] = useState<string | null>(null)
+
+  const { parsed, errors } = parseBulk(text)
+  const graphemeCount = parsed.reduce((n, p) => n + p.graphemes.length, 0)
+
+  function submit() {
+    if (parsed.length === 0) return
+    mergeParsed(parsed)
+    setDone(`Đã nhập ${parsed.length} âm / ${graphemeCount} cách viết.`)
+    setText('')
+  }
+
+  return (
+    <section className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+      <h2 className="mb-1 font-semibold">Nhập nhanh</h2>
+      <p className="mb-3 text-sm text-slate-500 dark:text-slate-400">
+        Mỗi dòng một âm. Âm/cách viết đã có sẽ được gộp thêm, không ghi đè.
+      </p>
+      <textarea
+        value={text}
+        onChange={(e) => {
+          setText(e.target.value)
+          setDone(null)
+        }}
+        rows={6}
+        spellCheck={false}
+        placeholder={PLACEHOLDER}
+        className="w-full rounded-lg border border-slate-300 bg-white p-3 font-mono text-sm dark:border-slate-600 dark:bg-slate-900"
+      />
+      <div className="mt-2 flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={submit}
+          disabled={parsed.length === 0}
+          className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500 disabled:opacity-40"
+        >
+          Nhập {parsed.length > 0 ? `${parsed.length} âm` : ''}
+        </button>
+        {graphemeCount > 0 && (
+          <span className="text-sm text-slate-500 dark:text-slate-400">
+            {graphemeCount} cách viết sẽ được thêm/gộp
+          </span>
+        )}
+        {done && <span className="text-sm text-emerald-600 dark:text-emerald-400">{done}</span>}
+      </div>
+      {errors.length > 0 && (
+        <ul className="mt-2 list-inside list-disc text-sm text-rose-600 dark:text-rose-400">
+          {errors.map((e) => (
+            <li key={e}>{e}</li>
+          ))}
+        </ul>
+      )}
+    </section>
+  )
+}

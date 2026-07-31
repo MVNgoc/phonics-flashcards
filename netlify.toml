@@ -1,0 +1,13 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# Same as public/_redirects — kept here so a Git-connected deploy works even if
+# the file is ever removed from public/.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
