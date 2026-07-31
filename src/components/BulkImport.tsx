@@ -2,15 +2,15 @@ import { useState } from 'react'
 import type { PhonemeType } from '../lib/types'
 import { useStore, type ParsedPhoneme } from '../hooks/useStore'
 
-const PLACEHOLDER = `vowel | a ngắn (cat) | a: cat, hat | ai: plaid
-consonant | âm f (fan) | f: fan | ph: phone, graph`
+const PLACEHOLDER = `vowel | /æ/ | a: cat, hat | ai: plaid
+consonant | /f/ | f: fan | ph: phone, graph`
 
 interface ParseResult {
   parsed: ParsedPhoneme[]
   errors: string[]
 }
 
-/** One group per line: `vowel|consonant | ghi chú | spelling: ex1, ex2 | ...` */
+/** One group per line: `vowel|consonant | âm | spelling: ex1, ex2 | ...` */
 export function parseBulk(text: string): ParseResult {
   const parsed: ParsedPhoneme[] = []
   const errors: string[] = []
@@ -21,7 +21,7 @@ export function parseBulk(text: string): ParseResult {
 
     const parts = line.split('|').map((p) => p.trim())
     if (parts.length < 3) {
-      errors.push(`Dòng ${i + 1}: cần "vowel | ghi chú | cách viết: ví dụ"`)
+      errors.push(`Dòng ${i + 1}: cần "vowel | âm | trường hợp: ví dụ"`)
       return
     }
 
@@ -82,8 +82,8 @@ export function BulkImport() {
     <section className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
       <h2 className="mb-1 font-semibold">Nhập nhanh</h2>
       <p className="mb-3 text-sm text-slate-500 dark:text-slate-400">
-        Mỗi dòng một nhóm âm: <code>vowel | ghi chú | cách viết: ví dụ, ví dụ | ...</code>. Nhóm
-        trùng ghi chú sẽ được gộp thêm, không ghi đè. Ghi chú để trống thì luôn tạo nhóm mới.
+        Mỗi dòng một âm: <code>vowel | âm | trường hợp: ví dụ, ví dụ | ...</code>. Âm trùng nhãn
+        sẽ được gộp thêm, không ghi đè. Nhãn để trống thì luôn tạo nhóm mới.
       </p>
       <textarea
         value={text}

@@ -18,7 +18,7 @@ export function StudyPage() {
       <ProgressBar percent={stats.percent} learned={stats.learned} total={stats.total} />
 
       <div className="flex items-center justify-between gap-2 text-sm text-slate-500 dark:text-slate-400">
-        <span>Gõ ra tất cả cách viết của âm, rồi gõ từ ví dụ.</span>
+        <span>Gõ từng trường hợp tạo nên âm, đúng thì gõ ví dụ cho nó.</span>
         <span className="shrink-0">
           còn {session.remaining} · đã ôn {session.reviewed}
         </span>
@@ -29,17 +29,19 @@ export function StudyPage() {
           <TypingCard
             group={session.group}
             phase={session.phase}
+            pending={session.pending}
             outcomes={session.outcomes}
             rejected={session.rejected}
             foundCount={session.foundCount}
             onSubmitSpelling={session.submitSpelling}
             onSubmitExample={session.submitExample}
-            onCheck={session.check}
+            onSkipExamples={session.skipExamples}
+            onFinish={session.finish}
             onCommit={session.commit}
           />
           <p className="text-center text-xs text-slate-500 dark:text-slate-400">
-            Enter = thêm câu trả lời · Enter khi ô trống = kiểm tra · gõ đúng cách viết + ít nhất 1
-            ví dụ = Tốt, quên ví dụ = Khó, thiếu cách viết = Sai
+            Enter = trả lời · Enter khi ô trống = bỏ qua bước đang làm · đúng trường hợp + ít nhất 1
+            ví dụ = Tốt, quên ví dụ = Khó, thiếu trường hợp = Sai
           </p>
         </>
       ) : (

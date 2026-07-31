@@ -1,6 +1,7 @@
 # Phonics Flashcard
 
-App học phonics tiếng Anh: gõ lại tất cả cách viết của một âm, chấm điểm tự động,
+App học phonics tiếng Anh: cho một âm, gõ lại tất cả trường hợp (cách viết) tạo
+nên âm đó và ví dụ cho từng trường hợp; chấm điểm tự động,
 lịch ôn theo spaced repetition (SM-2). Dữ liệu lưu trong localStorage của trình
 duyệt — không backend, không login, không đồng bộ.
 
@@ -26,7 +27,9 @@ npm install
 npm run dev      # http://localhost:5173
 ```
 
-Lần đầu mở app đã có sẵn data mẫu: 5 nguyên âm + 5 phụ âm (≈33 cách viết).
+Lần đầu mở app đã có sẵn data mẫu: 5 nguyên âm + 5 phụ âm (≈33 trường hợp), nhãn
+âm ghi bằng IPA (`/æ/`, `/ʃ/`…). Mọi thứ đều sửa được ở `/manage` — nhãn là text
+tự do, muốn ghi `a ngắn` thay cho `/æ/` cũng được.
 
 ```bash
 npm run typecheck   # tsc --noEmit
@@ -41,58 +44,73 @@ npm run preview     # xem thử bản build
 Ba tầng lồng nhau, lưu thành **một** key trong localStorage.
 
 ```
-Phoneme  (nhóm âm)          id, type: 'vowel'|'consonant', note?
-└── Grapheme (cách viết)    id, spelling, examples: string[]
-    └── ReviewState         lastReviewed, interval, easeFactor, repetitions,
-                            nextDue, correctCount, wrongCount
+Phoneme  (một âm)              id, type: 'vowel'|'consonant', note?
+└── Grapheme (trường hợp)      id, spelling, examples: string[]
+    └── ReviewState            lastReviewed, interval, easeFactor, repetitions,
+                               nextDue, correctCount, wrongCount
 ```
 
 Ba điều cần nhớ:
 
-1. **Không có trường IPA.** Một `Phoneme` chỉ là *nhóm các cách viết cùng âm*.
-2. **`note` chính là nhãn của nhóm và cũng là đề bài khi học** (vd `a ngắn (cat)`).
-   Nó tuỳ chọn, nhưng nhóm không có ghi chú thì lúc học chỉ hiện
-   *"(nhóm chưa có ghi chú)"* — không có gì để đoán. Nên luôn đặt ghi chú.
-3. **Tiến độ ôn gắn vào từng cách viết, không gắn vào nhóm.** Nhóm chỉ là đơn vị
-   khi học.
+1. **Không có trường IPA riêng.** Nhãn của âm nằm ở `note` — một field text tự do,
+   trong UI hiện là **"Âm"** (`placeholder: /æ/`). Data mẫu điền IPA vào đây, nhưng
+   ghi gì cũng được.
+2. **`note` chính là đề bài khi học.** Nó tuỳ chọn về mặt kiểu dữ liệu, nhưng âm
+   không có nhãn thì lúc học chỉ hiện *"(nhóm chưa có nhãn)"* — không có gì để đoán.
+   Nên luôn đặt nhãn.
+3. **Tiến độ ôn gắn vào từng trường hợp, không gắn vào âm.** Âm chỉ là đơn vị khi
+   học; một lượt học ghi điểm cho *mọi* trường hợp thuộc âm đó.
 
 Ngày tháng lưu dạng chuỗi `"YYYY-MM-DD"` (không có giờ, không timezone).
 
 ## Cách học
 
-Trang `/study`. Đơn vị học là **một nhóm âm**, không phải một cách viết.
+Trang `/study`. Đơn vị học là **một âm**, không phải một trường hợp lẻ. Luồng gõ
+**xen kẽ**: đúng một trường hợp là hỏi ví dụ cho đúng trường hợp đó ngay.
 
-**Bước 1 — gõ cách viết**
+**Bước 1 — hỏi âm**
 
-- Đề bài: ghi chú của nhóm + loại (nguyên âm / phụ âm) + số cách viết cần tìm.
-- Gõ từng cách viết, **Enter** sau mỗi cái.
-  - Đúng → chip xanh `✓ a`
-  - Không khớp cách viết nào → chip đỏ gạch ngang. **Không bị trừ điểm** (nó không
-    ứng với thẻ nào cả), chỉ để bạn thấy mình đã thử gì.
-  - Gõ lại cái đã đúng → bỏ qua, không tính thêm.
-- Bộ đếm `đã đúng 2/4` cho biết còn thiếu bao nhiêu.
+Đề bài là nhãn của âm (vd `/æ/`) + loại (nguyên âm / phụ âm) + số trường hợp cần
+tìm, kèm câu hỏi *"Những trường hợp nào tạo nên âm này?"*.
 
-**Bước 2 — kiểm tra**
+**Bước 2 — gõ một trường hợp**
 
-Bấm **Kiểm tra →** hoặc **Enter khi ô nhập đang trống**. App hiện toàn bộ đáp án:
+Gõ một trường hợp rồi **Enter**:
 
-- cách viết gõ đúng: dấu ✓ xanh
-- cách viết còn thiếu: dấu ✗ đỏ, **kèm luôn các từ ví dụ của nó** để học ngay
+- **Đúng** → chip xanh `✓ a`, và app **chuyển ngay sang hỏi ví dụ cho `a`** (bước 3).
+- **Sai** → chip đỏ gạch ngang, **bỏ qua bước ví dụ**, quay lại gõ trường hợp khác.
+  Gõ sai *không* bị trừ điểm (nó không ứng với trường hợp nào trong dữ liệu), chỉ
+  để bạn thấy mình đã thử gì.
+- **Gõ lại cái đã đúng** → bỏ qua, không tính thêm, không hỏi lại ví dụ.
+- Trường hợp đúng nhưng **chưa có ví dụ nào trong dữ liệu** → không hỏi ví dụ, quay
+  lại gõ trường hợp luôn.
 
-**Bước 3 — gõ từ ví dụ**
+Bộ đếm `đã đúng 2/4` cho biết còn thiếu bao nhiêu.
 
-Với mỗi cách viết đã gõ đúng, có ô nhập để gõ từ ví dụ (`cat`, `hat`, …). Gõ đúng
-→ chip xanh, còn thiếu bao nhiêu hiện bên cạnh. Bí thì bấm **hiện đáp án** cho
-riêng dòng đó (không ảnh hưởng điểm — điểm chỉ tính theo số ví dụ bạn đã gõ được
-trước đó).
+**Bước 3 — gõ ví dụ cho trường hợp vừa đúng**
 
-Nhãn điểm (`Sai` / `Khó` / `Tốt`) cập nhật **ngay khi bạn gõ**, nên thấy trước
-mình sẽ được mấy điểm.
+Câu hỏi đổi thành *"Đúng rồi. Cho ví dụ dùng **a** đọc thành âm này"*. Gõ từng từ
+rồi Enter; đúng thì từ đó hiện cạnh chip trường hợp, số `còn N ví dụ` giảm dần.
 
-**Bước 4 — chấm**
+Thoát bước này bằng một trong ba cách:
 
-Bấm **Chấm & thẻ tiếp**: ghi điểm cho *mọi* cách viết trong nhóm, cập nhật lịch
-ôn, sang nhóm tiếp theo.
+- gõ đủ **hết** ví dụ của trường hợp đó → tự động quay lại bước 2
+- **Enter khi ô trống** → bỏ qua phần ví dụ còn lại
+- bấm **Bỏ qua ví dụ →**
+
+**Bước 4 — xem đáp án**
+
+Khi đã tìm đủ tất cả trường hợp (hoặc bạn bấm **Hết rồi, xem đáp án →** / Enter
+lúc ô trống ở bước 2), app hiện bảng tổng kết cho từng trường hợp:
+
+- ✓ xanh = gõ được, ✗ đỏ = thiếu, kèm nhãn điểm `Tốt` / `Khó` / `Sai`
+- toàn bộ ví dụ của trường hợp đó: **xanh** = bạn đã gõ được, **xám** = chưa gõ được
+  (kể cả những trường hợp bạn gõ thiếu — để học luôn)
+
+**Bước 5 — chấm**
+
+Bấm **Chấm & thẻ tiếp**: ghi điểm cho *mọi* trường hợp trong âm đó, cập nhật lịch
+ôn, sang âm tiếp theo.
 
 ### Quy tắc so khớp
 
@@ -104,23 +122,24 @@ Bấm **Chấm & thẻ tiếp**: ghi điểm cho *mọi* cách viết trong nhó
 
 | Phím | Tác dụng |
 | --- | --- |
-| `Enter` (ô có chữ) | thêm câu trả lời |
-| `Enter` (ô trống) | chuyển sang bước kiểm tra |
-| `Tab` | nhảy giữa các ô nhập ví dụ |
+| `Enter` (ô có chữ) | gửi câu trả lời |
+| `Enter` (ô trống, đang gõ trường hợp) | ngừng và xem đáp án |
+| `Enter` (ô trống, đang gõ ví dụ) | bỏ qua phần ví dụ còn lại |
 
-Không còn phím `Space` / `1` `2` `3` `4` như bản thẻ lật cũ — điểm giờ tự chấm.
+Ô nhập tự focus mỗi khi câu hỏi đổi, nên gõ liên tục không cần chuột. Không còn
+phím `Space` / `1` `2` `3` `4` như bản thẻ lật cũ — điểm giờ tự chấm.
 
 ## Cách tính điểm
 
 Không có nút tự đánh giá. Điểm suy ra từ những gì bạn gõ, tính **riêng cho từng
-cách viết** trong nhóm:
+trường hợp** trong âm đó:
 
 | Kết quả gõ | Điểm | Nhãn |
 | --- | --- | --- |
-| Đúng cách viết **+ ít nhất 1 từ ví dụ** | 4 | Tốt |
-| Đúng cách viết, **không gõ được ví dụ nào** | 3 | Khó |
-| **Thiếu** cách viết (không gõ ra) | 1 | Sai |
-| Đúng cách viết, mà cách viết đó **chưa có ví dụ nào trong dữ liệu** | 4 | Tốt |
+| Đúng trường hợp **+ ít nhất 1 từ ví dụ** | 4 | Tốt |
+| Đúng trường hợp, **không gõ được ví dụ nào** (bỏ qua hoặc gõ sai hết) | 3 | Khó |
+| **Thiếu** trường hợp (không gõ ra) | 1 | Sai |
+| Đúng trường hợp, mà trường hợp đó **chưa có ví dụ nào trong dữ liệu** | 4 | Tốt |
 
 Dòng cuối là chủ ý: không thể trừ điểm vì thiếu dữ liệu mà chính bạn chưa nhập.
 
@@ -128,12 +147,12 @@ Hàm quyết định là `gradeFromTyping` trong `src/lib/sm2.ts` (có unit test
 
 ### Lặp lại trong phiên
 
-Nhóm nào có **ít nhất một cách viết bị điểm dưới 4** sẽ được đẩy về **cuối queue
-của phiên hiện tại**. Tức là cả `Sai` và `Khó` đều làm nhóm quay lại.
+Âm nào có **ít nhất một trường hợp bị điểm dưới 4** sẽ được đẩy về **cuối queue
+của phiên hiện tại**. Tức là cả `Sai` và `Khó` đều làm âm đó quay lại.
 
-Lượt sau, cả nhóm được chấm lại từ đầu (kể cả những cách viết lần trước đã đúng),
-và **lần trả lời cuối cùng là lần quyết định lịch ôn**. Vòng lặp tự kết thúc vì
-sau bước kiểm tra bạn đã thấy hết đáp án.
+Lượt sau, cả âm được chấm lại từ đầu (kể cả những trường hợp lần trước đã đúng),
+và **lần trả lời cuối cùng là lần quyết định lịch ôn**. Vòng lặp tự kết thúc vì ở
+bước xem đáp án bạn đã thấy hết.
 
 ## Thuật toán SM-2 & lịch ôn
 
@@ -196,14 +215,14 @@ Một lần Sai duy nhất đưa nó về `1 ngày` và `repetitions = 0`.
 Queue được **chốt một lần khi vào phiên** (`/study`), nên chấm điểm giữa phiên
 không làm xáo trộn phần còn lại.
 
-Thứ tự ưu tiên, xét theo từng cách viết:
+Thứ tự ưu tiên, xét theo từng trường hợp:
 
 1. **Quá hạn / đến hạn hôm nay** (`nextDue <= hôm nay`) — quá hạn lâu nhất lên trước
 2. **Thẻ mới** (`nextDue === null`, chưa học lần nào)
 3. **Sắp đến hạn trong 1–3 ngày** — gần hạn hơn lên trước
 4. Đến hạn xa hơn 3 ngày: **không đưa vào phiên**
 
-Nhóm thì thừa hưởng ưu tiên của cách viết gấp nhất trong nhóm
+Âm thì thừa hưởng ưu tiên của trường hợp gấp nhất trong nó
 (`buildGroupQueue` chỉ dedupe `buildQueue` theo nhóm nên thứ tự khớp nhau).
 
 Học hết queue → hiện *"Hết thẻ cần ôn hôm nay"* + nút **Học lại phiên mới** (dựng
@@ -212,7 +231,7 @@ lại queue, không đợi đến mai).
 ## Progress % và định nghĩa "thuộc"
 
 ```
-% = (số cách viết đã "thuộc") / (tổng số cách viết) * 100     // làm tròn
+% = (số trường hợp đã "thuộc") / (tổng số trường hợp) * 100     // làm tròn
 "thuộc" = repetitions >= 3  VÀ  interval >= 7 ngày
 ```
 
@@ -226,44 +245,44 @@ Progress bar hiện ở đầu cả `/study` và `/stats`.
 
 `/manage`:
 
-- Thêm / sửa / xoá **nhóm âm** (loại + ghi chú), lọc theo nguyên âm / phụ âm.
-- Thêm / sửa / xoá **cách viết** trong nhóm. Mỗi dòng hiện luôn `đúng N · sai N ·
+- Thêm / sửa / xoá **âm** (loại + nhãn ở field **Âm**), lọc theo nguyên âm / phụ âm.
+- Thêm / sửa / xoá **trường hợp** trong âm. Mỗi dòng hiện luôn `đúng N · sai N ·
   ôn lại YYYY-MM-DD` và nhãn `thuộc` nếu đã đạt.
 - Thêm / xoá **từ ví dụ** (chip có dấu ×).
 - **Export JSON** / **Import JSON** / **Nạp lại data mẫu**.
 - Sửa gì là lưu ngay vào localStorage, không có nút Save.
 
-Xoá cả nhóm cần bấm xác nhận; xoá cách viết thì không (xoá là mất luôn tiến độ ôn
-của cách viết đó).
+Xoá cả âm cần bấm xác nhận; xoá trường hợp thì không (xoá là mất luôn tiến độ ôn
+của trường hợp đó).
 
 ### Nhập nhanh
 
-Mỗi dòng một nhóm âm:
+Mỗi dòng một âm:
 
 ```
-vowel | a ngắn (cat) | a: cat, hat | ai: plaid
-consonant | âm f (fan) | f: fan | ph: phone, graph
+vowel | /æ/ | a: cat, hat | ai: plaid
+consonant | /f/ | f: fan | ph: phone, graph
 ```
 
-Cú pháp `type | ghi chú | cách-viết: ví dụ, ví dụ | cách-viết: ...`
+Cú pháp `type | âm | trường-hợp: ví dụ, ví dụ | trường-hợp: ...`
 
 - Cột 1: `vowel` / `consonant` (viết `v`/`n` → nguyên âm, `c`/`p` → phụ âm cũng được).
-- Cột 2: ghi chú, cũng là **khoá gộp**.
-- Từ cột 3: mỗi cột một cách viết, ví dụ nằm sau dấu `:`, cách nhau bằng dấu phẩy.
-  Cách viết không có ví dụ thì ghi tên trơn cũng được.
+- Cột 2: nhãn của âm, cũng là **khoá gộp**.
+- Từ cột 3: mỗi cột một trường hợp, ví dụ nằm sau dấu `:`, cách nhau bằng dấu phẩy.
+  Trường hợp không có ví dụ thì ghi tên trơn cũng được.
 - Dòng trống và dòng bắt đầu bằng `#` bị bỏ qua. Lỗi từng dòng hiện ngay bên dưới.
 
 **Quy tắc gộp:**
 
-- Ghi chú **trùng** (không phân biệt hoa thường) → gộp vào nhóm cũ: thêm cách viết
+- Nhãn âm **trùng** (không phân biệt hoa thường) → gộp vào âm cũ: thêm trường hợp
   mới, hợp nhất danh sách ví dụ. **Không ghi đè, không mất tiến độ ôn.**
-- Ghi chú **để trống** (`vowel |  | a: cat`) → luôn tạo nhóm mới.
-- Cách viết trùng trong cùng nhóm → chỉ thêm những ví dụ chưa có.
+- Nhãn **để trống** (`vowel |  | a: cat`) → luôn tạo âm mới.
+- Trường hợp trùng trong cùng một âm → chỉ thêm những ví dụ chưa có.
 
 ## Trang thống kê
 
-`/stats`: progress bar, 4 ô số (cần ôn hôm nay / tổng cách viết / đã thuộc / %),
-và **top 5 cách viết sai nhiều nhất** vẽ bằng div (không dùng thư viện chart).
+`/stats`: progress bar, 4 ô số (cần ôn hôm nay / tổng trường hợp / đã thuộc / %),
+và **top 5 trường hợp sai nhiều nhất** vẽ bằng div (không dùng thư viện chart).
 "Cần ôn hôm nay" tính cả thẻ mới chưa học.
 
 ## Backup dữ liệu
@@ -314,14 +333,14 @@ Không cần env var, không cần plugin.
 ```
 src/
 ├── components/
-│   ├── TypingCard.tsx      2 phase (spell / reveal) + ô nhập có flash đỏ khi sai
+│   ├── TypingCard.tsx      phase answer (gõ xen kẽ) / summary + ô nhập flash đỏ
 │   ├── ProgressBar.tsx
 │   ├── ThemeToggle.tsx
-│   ├── PhonemeManager.tsx  CRUD nhóm âm / cách viết / ví dụ
+│   ├── PhonemeManager.tsx  CRUD âm / trường hợp / ví dụ
 │   └── BulkImport.tsx      parseBulk + textarea nhập nhanh
 ├── hooks/
 │   ├── useStore.ts         context + localStorage, mọi hành động sửa dữ liệu
-│   ├── useStudyQueue.ts    state của một phiên học, tự chấm điểm
+│   ├── useStudyQueue.ts    state machine của phiên học (answer/summary), tự chấm
 │   └── useDarkMode.ts
 ├── lib/
 │   ├── sm2.ts              date helper, review(), gradeFromTyping(), queue, stats
@@ -345,6 +364,7 @@ backend. Test bằng vitest, chỉ test phần logic thuần.
 | Công thức ease / interval | `review` trong `sm2.ts` |
 | Điểm chấm từ kết quả gõ | `gradeFromTyping` trong `sm2.ts` |
 | Ngưỡng lặp lại trong phiên (`grade < 4`) | `commit` trong `useStudyQueue.ts` |
+| Luồng hỏi xen kẽ (đúng → hỏi ví dụ ngay) | `submitSpelling` / `submitExample` trong `useStudyQueue.ts` |
 | Cửa sổ "due sắp tới" (1–3 ngày) | `buildQueue` trong `sm2.ts` |
 | Độ chặt của so khớp | `normalize` trong `sm2.ts` |
 | Data mẫu | `seed.ts` |

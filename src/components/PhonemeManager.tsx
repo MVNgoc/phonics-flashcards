@@ -31,7 +31,7 @@ function AddPhonemeForm() {
       <input
         value={note}
         onChange={(e) => setNote(e.target.value)}
-        placeholder="Ghi chú, vd: a ngắn (cat)"
+        placeholder="Âm, vd: /æ/"
         className={`${input} flex-1 min-w-40`}
       />
       <button type="submit" className={`${btn} bg-sky-600 text-white hover:bg-sky-500`}>
@@ -154,7 +154,7 @@ function PhonemeCard({ phoneme }: { phoneme: Phoneme }) {
         <input
           value={phoneme.note ?? ''}
           onChange={(e) => updatePhoneme(phoneme.id, { note: e.target.value || undefined })}
-          placeholder="Ghi chú, vd: a ngắn (cat)"
+          placeholder="Âm, vd: /æ/"
           className={`${input} flex-1 min-w-40 font-medium`}
         />
         {confirming ? (

@@ -1,16 +1,10 @@
 import { useCallback, useMemo, useState } from 'react'
-import {
-  buildGroupQueue,
-  gradeFromTyping,
-  normalize,
-  todayISO,
-  type Grade,
-} from '../lib/sm2'
+import { buildGroupQueue, gradeFromTyping, normalize, todayISO, type Grade } from '../lib/sm2'
 import type { Grapheme, Phoneme } from '../lib/types'
 import { useStore } from './useStore'
 
-/** 'spell' = typing spellings, 'reveal' = answers shown + typing examples. */
-export type Phase = 'spell' | 'reveal'
+/** 'answer' = đang gõ trường hợp / ví dụ, 'summary' = xem đáp án rồi chấm. */
+export type Phase = 'answer' | 'summary'
 
 export type MatchResult = 'hit' | 'dup' | 'miss'
 
@@ -22,22 +16,25 @@ export interface GraphemeOutcome {
 }
 
 /**
- * One study session. The unit is a sound group: you type every spelling that
- * makes the sound, then its example words. Grades come from what you typed, and
- * a group with any grade below 4 comes back at the end of this session.
+ * Một phiên học. Đơn vị là một nhóm âm và luồng gõ xen kẽ:
+ * gõ đúng một cách viết -> hỏi ngay ví dụ cho đúng cách viết đó -> quay lại gõ
+ * cách viết tiếp. Gõ sai thì không hỏi ví dụ. Điểm suy ra từ những gì đã gõ.
  */
 export function useStudyQueue() {
   const { data, gradeCard } = useStore()
   const today = useMemo(() => todayISO(), [])
 
   const [queue, setQueue] = useState<string[]>(() => buildGroupQueue(data.phonemes, today))
-  const [phase, setPhase] = useState<Phase>('spell')
+  const [phase, setPhase] = useState<Phase>('answer')
+  /** Cách viết đang được hỏi ví dụ; null = đang hỏi cách viết. */
+  const [pendingId, setPendingId] = useState<string | null>(null)
   const [found, setFound] = useState<string[]>([])
   const [rejected, setRejected] = useState<string[]>([])
   const [examplesFound, setExamplesFound] = useState<Record<string, string[]>>({})
   const [reviewed, setReviewed] = useState(0)
 
   const group: Phoneme | null = data.phonemes.find((p) => p.id === queue[0]) ?? null
+  const pending = pendingId ? (group?.graphemes.find((g) => g.id === pendingId) ?? null) : null
 
   const submitSpelling = useCallback(
     (text: string): MatchResult => {
@@ -49,28 +46,53 @@ export function useStudyQueue() {
         return 'miss'
       }
       if (found.includes(hit.id)) return 'dup'
-      setFound((f) => [...f, hit.id])
+
+      setFound([...found, hit.id])
+      if (hit.examples.length > 0) {
+        // Đúng -> hỏi ví dụ cho chính cách viết này.
+        setPendingId(hit.id)
+      } else if (found.length + 1 === group.graphemes.length) {
+        setPhase('summary')
+      }
       return 'hit'
     },
     [group, found],
   )
 
   const submitExample = useCallback(
-    (graphemeId: string, text: string): MatchResult => {
+    (text: string): MatchResult => {
       const n = normalize(text)
-      if (!group || !n) return 'miss'
-      const g = group.graphemes.find((x) => x.id === graphemeId)
-      const hit = g?.examples.find((ex) => normalize(ex) === n)
+      if (!group || !pending || !n) return 'miss'
+      const hit = pending.examples.find((ex) => normalize(ex) === n)
       if (!hit) return 'miss'
-      const already = examplesFound[graphemeId] ?? []
+      const already = examplesFound[pending.id] ?? []
       if (already.includes(hit)) return 'dup'
-      setExamplesFound((m) => ({ ...m, [graphemeId]: [...(m[graphemeId] ?? []), hit] }))
+
+      setExamplesFound((m) => ({ ...m, [pending.id]: [...already, hit] }))
+      if (already.length + 1 === pending.examples.length) {
+        // Đã gõ hết ví dụ của cách viết này -> quay lại gõ cách viết.
+        setPendingId(null)
+        if (found.length === group.graphemes.length) setPhase('summary')
+      }
       return 'hit'
     },
-    [group, examplesFound],
+    [group, pending, examplesFound, found],
   )
 
-  /** Live per-grapheme result — also what `commit` writes to the store. */
+  /** Thôi không gõ thêm ví dụ cho cách viết hiện tại, quay lại gõ cách viết. */
+  const skipExamples = useCallback(() => {
+    if (!group) return
+    setPendingId(null)
+    if (found.length === group.graphemes.length) setPhase('summary')
+  }, [group, found])
+
+  /** Bỏ cuộc phần còn lại của nhóm và xem đáp án. */
+  const finish = useCallback(() => {
+    setPendingId(null)
+    setPhase('summary')
+  }, [])
+
+  /** Kết quả từng cách viết, cập nhật ngay theo những gì đã gõ. */
   const outcomes: GraphemeOutcome[] = useMemo(() => {
     if (!group) return []
     return group.graphemes.map((g) => {
@@ -90,13 +112,12 @@ export function useStudyQueue() {
   }, [group, found, examplesFound])
 
   const reset = useCallback(() => {
-    setPhase('spell')
+    setPhase('answer')
+    setPendingId(null)
     setFound([])
     setRejected([])
     setExamplesFound({})
   }, [])
-
-  const check = useCallback(() => setPhase('reveal'), [])
 
   const commit = useCallback(() => {
     if (!group) return
@@ -116,6 +137,7 @@ export function useStudyQueue() {
   return {
     group,
     phase,
+    pending,
     outcomes,
     rejected,
     foundCount: found.length,
@@ -123,7 +145,8 @@ export function useStudyQueue() {
     reviewed,
     submitSpelling,
     submitExample,
-    check,
+    skipExamples,
+    finish,
     commit,
     restart,
     today,
