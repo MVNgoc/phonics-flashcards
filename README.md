@@ -33,7 +33,7 @@ máy mới là có ngay). Mọi thứ đều sửa được ở `/manage` — nh
 
 ```bash
 npm run typecheck   # tsc --noEmit
-npm test            # unit test cho sm2.ts, storage.ts, seed.ts (43 test)
+npm test            # unit test cho sm2.ts, storage.ts, seed.ts (48 test)
 npm run test:watch  # vitest watch mode
 npm run build       # typecheck + build ra dist/
 npm run preview     # xem thử bản build
@@ -215,15 +215,21 @@ Một lần Sai duy nhất đưa nó về `1 ngày` và `repetitions = 0`.
 Queue được **chốt một lần khi vào phiên** (`/study`), nên chấm điểm giữa phiên
 không làm xáo trộn phần còn lại.
 
-Thứ tự ưu tiên, xét theo từng trường hợp:
+Thứ tự ưu tiên (mỗi âm lấy mức gấp nhất trong các trường hợp của nó):
 
 1. **Quá hạn / đến hạn hôm nay** (`nextDue <= hôm nay`) — quá hạn lâu nhất lên trước
 2. **Thẻ mới** (`nextDue === null`, chưa học lần nào)
 3. **Sắp đến hạn trong 1–3 ngày** — gần hạn hơn lên trước
 4. Đến hạn xa hơn 3 ngày: **không đưa vào phiên**
 
-Âm thì thừa hưởng ưu tiên của trường hợp gấp nhất trong nó
-(`buildGroupQueue` chỉ dedupe `buildQueue` theo nhóm nên thứ tự khớp nhau).
+**Cùng một mức ưu tiên thì thứ tự ngẫu nhiên, đổi mỗi phiên.** Cách làm: xáo
+Fisher-Yates trước rồi mới `sort` theo số ngày — `Array.sort` ổn định (ES2019) nên
+"quá hạn lâu nhất lên trước" vẫn đúng tuyệt đối, chỉ những âm *bằng nhau về số
+ngày* mới hoán đổi. Lúc bộ âm còn mới tinh thì cả 32 âm cùng mức "thẻ mới", nên
+thứ tự hoàn toàn ngẫu nhiên chứ không chạy tuần tự từ `/a/` xuống.
+
+Nguồn ngẫu nhiên truyền vào qua tham số `rng` (mặc định `Math.random`) nên test
+vẫn deterministic — xem `describe('shuffling within a priority level')`.
 
 Học hết queue → hiện *"Hết thẻ cần ôn hôm nay"* + nút **Học lại phiên mới** (dựng
 lại queue, không đợi đến mai).
@@ -369,6 +375,7 @@ backend. Test bằng vitest, chỉ test phần logic thuần.
 | Ngưỡng lặp lại trong phiên (`grade < 4`) | `commit` trong `useStudyQueue.ts` |
 | Luồng hỏi xen kẽ (đúng → hỏi ví dụ ngay) | `submitSpelling` / `submitExample` trong `useStudyQueue.ts` |
 | Cửa sổ "due sắp tới" (1–3 ngày) | `buildQueue` trong `sm2.ts` |
+| Xáo ngẫu nhiên / bỏ xáo | `shuffled()` trong `buildGroupQueue`, `sm2.ts` |
 | Độ chặt của so khớp | `normalize` trong `sm2.ts` |
 | Bộ âm mặc định | `seed.ts` (sửa xong chạy `npm test` để bắt trùng lặp) |
 

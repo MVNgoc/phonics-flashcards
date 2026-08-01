@@ -115,11 +115,32 @@ export interface QueueCard {
   graphemeId: string
 }
 
+/** Nguồn ngẫu nhiên, tách ra được để test deterministic. */
+export type Rng = () => number
+
+/** Fisher-Yates, trả về mảng mới. */
+function shuffled<T>(items: T[], rng: Rng): T[] {
+  const out = [...items]
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1))
+    ;[out[i], out[j]] = [out[j], out[i]]
+  }
+  return out
+}
+
 /**
  * Priority: overdue/due today -> brand new cards -> due within the next 1-3 days.
  * Cards due further out are left out of the session.
+ *
+ * Trong cùng một mức ưu tiên thì thứ tự là ngẫu nhiên: xáo trước rồi mới sort
+ * theo số ngày. Array.sort ổn định (ES2019) nên "quá hạn lâu nhất lên trước" vẫn
+ * đúng, chỉ những thẻ bằng nhau về số ngày mới đổi chỗ cho nhau.
  */
-export function buildQueue(phonemes: Phoneme[], today: string): QueueCard[] {
+export function buildQueue(
+  phonemes: Phoneme[],
+  today: string,
+  rng: Rng = Math.random,
+): QueueCard[] {
   const overdue: { card: QueueCard; lateBy: number }[] = []
   const fresh: QueueCard[] = []
   const soon: { card: QueueCard; inDays: number }[] = []
@@ -138,25 +159,51 @@ export function buildQueue(phonemes: Phoneme[], today: string): QueueCard[] {
     }
   }
 
-  overdue.sort((a, b) => b.lateBy - a.lateBy)
-  soon.sort((a, b) => a.inDays - b.inDays)
+  const overdueOrder = shuffled(overdue, rng).sort((a, b) => b.lateBy - a.lateBy)
+  const soonOrder = shuffled(soon, rng).sort((a, b) => a.inDays - b.inDays)
 
-  return [...overdue.map((x) => x.card), ...fresh, ...soon.map((x) => x.card)]
+  return [
+    ...overdueOrder.map((x) => x.card),
+    ...shuffled(fresh, rng),
+    ...soonOrder.map((x) => x.card),
+  ]
 }
 
 /**
  * Study unit is a whole sound group: the group inherits the priority of its most
  * urgent grapheme, so we can reuse buildQueue and just dedupe by phoneme.
  */
-export function buildGroupQueue(phonemes: Phoneme[], today: string): string[] {
-  const seen = new Set<string>()
-  const order: string[] = []
-  for (const card of buildQueue(phonemes, today)) {
-    if (seen.has(card.phonemeId)) continue
-    seen.add(card.phonemeId)
-    order.push(card.phonemeId)
+export function buildGroupQueue(
+  phonemes: Phoneme[],
+  today: string,
+  rng: Rng = Math.random,
+): string[] {
+  // (bucket, key) càng nhỏ càng gấp. bucket 0 = quá hạn, 1 = mới, 2 = sắp đến hạn.
+  const ranked: { id: string; bucket: number; key: number }[] = []
+
+  for (const p of phonemes) {
+    let best: { bucket: number; key: number } | null = null
+    for (const g of p.graphemes) {
+      const due = g.review.nextDue
+      let cur: { bucket: number; key: number } | null = null
+      if (due === null) {
+        cur = { bucket: 1, key: 0 }
+      } else {
+        const inDays = daysBetween(today, due)
+        if (inDays <= 0) cur = { bucket: 0, key: inDays } // càng âm càng quá hạn lâu
+        else if (inDays <= 3) cur = { bucket: 2, key: inDays }
+      }
+      if (cur && (!best || cur.bucket < best.bucket || (cur.bucket === best.bucket && cur.key < best.key))) {
+        best = cur
+      }
+    }
+    if (best) ranked.push({ id: p.id, ...best })
   }
-  return order
+
+  // Xáo trước, sort sau: cùng mức ưu tiên thì ngẫu nhiên, khác mức thì giữ đúng thứ tự.
+  return shuffled(ranked, rng)
+    .sort((a, b) => a.bucket - b.bucket || a.key - b.key)
+    .map((x) => x.id)
 }
 
 // ---------- aggregate stats ----------

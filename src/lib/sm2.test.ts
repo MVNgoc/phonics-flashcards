@@ -15,6 +15,21 @@ import type { Phoneme, ReviewState } from './types'
 
 const TODAY = '2026-07-31'
 
+/** Rng giả: luôn trả 0 nên Fisher-Yates giữ nguyên thứ tự — dùng để test phần sort. */
+const noShuffle = () => 0
+
+/** mulberry32: rng có seed, deterministic. */
+function seededRng(seed: number) {
+  let a = seed + 0x6d2b79f5
+  return () => {
+    a |= 0
+    a = (a + 0x6d2b79f5) | 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
 function state(partial: Partial<ReviewState> = {}): ReviewState {
   return { ...newReviewState(), ...partial }
 }
@@ -146,7 +161,7 @@ describe('buildQueue', () => {
     },
   ]
 
-  const ids = buildQueue(phonemes, TODAY).map((c) => c.graphemeId)
+  const ids = buildQueue(phonemes, TODAY, noShuffle).map((c) => c.graphemeId)
 
   it('orders overdue first (most overdue leading), then new, then due soon', () => {
     expect(ids).toEqual(['late5', 'late1', 'today', 'new', 'soon1', 'soon2'])
@@ -162,7 +177,7 @@ describe('buildQueue', () => {
 
   it('groups inherit the priority of their most urgent grapheme', () => {
     // p1 leads: its 'late5' is the most overdue card anywhere.
-    expect(buildGroupQueue(phonemes, TODAY)).toEqual(['p1', 'p2'])
+    expect(buildGroupQueue(phonemes, TODAY, noShuffle)).toEqual(['p1', 'p2'])
   })
 
   it('leaves out groups with nothing to study', () => {
@@ -174,7 +189,58 @@ describe('buildQueue', () => {
         { id: 'x', spelling: 'x', examples: [], review: state({ nextDue: '2026-12-01' }) },
       ],
     }
-    expect(buildGroupQueue([...phonemes, far], TODAY)).not.toContain('p3')
+    expect(buildGroupQueue([...phonemes, far], TODAY, noShuffle)).not.toContain('p3')
+  })
+})
+
+describe('shuffling within a priority level', () => {
+  /** 12 nhóm mới tinh, cùng mức ưu tiên. */
+  const fresh: Phoneme[] = Array.from({ length: 12 }, (_, i) => ({
+    id: `p${i}`,
+    note: `/${i}/`,
+    type: 'vowel' as const,
+    graphemes: [{ id: `g${i}`, spelling: `s${i}`, examples: [], review: state() }],
+  }))
+
+  it('nhóm cùng mức ưu tiên bị xáo, không giữ thứ tự khai báo', () => {
+    const inOrder = fresh.map((p) => p.id)
+    expect(buildGroupQueue(fresh, TODAY, seededRng(1))).not.toEqual(inOrder)
+  })
+
+  it('xáo là hoán vị — không mất, không nhân bản nhóm nào', () => {
+    const out = buildGroupQueue(fresh, TODAY, seededRng(7))
+    expect([...out].sort()).toEqual(fresh.map((p) => p.id).sort())
+  })
+
+  it('hai phiên khác nhau cho thứ tự khác nhau', () => {
+    expect(buildGroupQueue(fresh, TODAY, seededRng(1))).not.toEqual(
+      buildGroupQueue(fresh, TODAY, seededRng(2)),
+    )
+  })
+
+  it('xáo không được vượt mặt mức ưu tiên: quá hạn luôn trước thẻ mới', () => {
+    const late: Phoneme = {
+      id: 'late',
+      note: '/late/',
+      type: 'vowel',
+      graphemes: [{ id: 'gl', spelling: 'l', examples: [], review: state({ nextDue: '2026-07-01' }) }],
+    }
+    for (let seed = 0; seed < 20; seed++) {
+      expect(buildGroupQueue([...fresh, late], TODAY, seededRng(seed))[0]).toBe('late')
+    }
+  })
+
+  it('trong nhóm quá hạn, quá hạn lâu hơn vẫn lên trước dù có xáo', () => {
+    const mk = (id: string, nextDue: string): Phoneme => ({
+      id,
+      note: id,
+      type: 'vowel',
+      graphemes: [{ id: `${id}-g`, spelling: id, examples: [], review: state({ nextDue }) }],
+    })
+    const overdue = [mk('d1', '2026-07-30'), mk('d9', '2026-07-22'), mk('d3', '2026-07-28')]
+    for (let seed = 0; seed < 20; seed++) {
+      expect(buildGroupQueue(overdue, TODAY, seededRng(seed))).toEqual(['d9', 'd3', 'd1'])
+    }
   })
 })
 
