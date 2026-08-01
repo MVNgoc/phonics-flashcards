@@ -18,7 +18,7 @@ export function StudyPage() {
       <ProgressBar percent={stats.percent} learned={stats.learned} total={stats.total} />
 
       <div className="flex items-center justify-between gap-2 text-sm text-slate-500 dark:text-slate-400">
-        <span>Gõ từng trường hợp tạo nên âm, đúng thì gõ ví dụ cho nó.</span>
+        <span>Gõ từng trường hợp tạo nên âm, đúng thì gõ một ví dụ cho nó.</span>
         <span className="shrink-0">
           còn {session.remaining} · đã ôn {session.reviewed}
         </span>
@@ -40,8 +40,8 @@ export function StudyPage() {
             onCommit={session.commit}
           />
           <p className="text-center text-xs text-slate-500 dark:text-slate-400">
-            Enter = trả lời · Enter khi ô trống = bỏ qua bước đang làm · đúng trường hợp + ít nhất 1
-            ví dụ = Tốt, quên ví dụ = Khó, thiếu trường hợp = Sai
+            Enter = trả lời · Enter khi ô trống = bỏ qua bước đang làm · đúng trường hợp + 1 ví dụ =
+            Tốt, không nhớ ví dụ = Khó, thiếu trường hợp = Sai
           </p>
         </>
       ) : (

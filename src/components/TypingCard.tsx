@@ -126,7 +126,7 @@ function AnswerPhase({
       <p className="text-center text-sm text-slate-500 dark:text-slate-400">
         {pending ? (
           <>
-            Đúng rồi. Cho ví dụ dùng{' '}
+            Đúng rồi. Cho <b>một</b> ví dụ dùng{' '}
             <span className="font-bold text-slate-900 dark:text-slate-100">{pending.spelling}</span>{' '}
             đọc thành âm này:
           </>
@@ -160,13 +160,13 @@ function AnswerPhase({
 
         {pending ? (
           <div className="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
-            <span>còn {missingExamples} ví dụ</span>
+            <span>{missingExamples} đáp án được chấp nhận</span>
             <button
               type="button"
               onClick={onSkipExamples}
               className="rounded-lg border border-slate-300 px-3 py-1.5 font-medium dark:border-slate-600"
             >
-              Bỏ qua ví dụ →
+              Không nhớ, bỏ qua →
             </button>
           </div>
         ) : (

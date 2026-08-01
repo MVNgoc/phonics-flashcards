@@ -87,16 +87,17 @@ Gõ một trường hợp rồi **Enter**:
 
 Bộ đếm `đã đúng 2/4` cho biết còn thiếu bao nhiêu.
 
-**Bước 3 — gõ ví dụ cho trường hợp vừa đúng**
+**Bước 3 — gõ một ví dụ cho trường hợp vừa đúng**
 
-Câu hỏi đổi thành *"Đúng rồi. Cho ví dụ dùng **a** đọc thành âm này"*. Gõ từng từ
-rồi Enter; đúng thì từ đó hiện cạnh chip trường hợp, số `còn N ví dụ` giảm dần.
+Câu hỏi đổi thành *"Đúng rồi. Cho **một** ví dụ dùng **a** đọc thành âm này"*.
 
-Thoát bước này bằng một trong ba cách:
+**Chỉ cần một ví dụ đúng là xong** — gõ được là tự quay lại bước 2 ngay. Danh sách
+ví dụ trong dữ liệu không phải bài tập phải làm hết, nó là *tập đáp án được chấp
+nhận*: seed 6 từ nghĩa là bạn nhớ ra từ nào trong 6 từ đó cũng tính đúng. Dòng
+`6 đáp án được chấp nhận` dưới ô nhập chính là số đó.
 
-- gõ đủ **hết** ví dụ của trường hợp đó → tự động quay lại bước 2
-- **Enter khi ô trống** → bỏ qua phần ví dụ còn lại
-- bấm **Bỏ qua ví dụ →**
+Không nhớ nổi từ nào thì **Enter khi ô trống** hoặc bấm **Không nhớ, bỏ qua →** —
+trường hợp đó bị chấm Khó (3) chứ không phải Sai.
 
 **Bước 4 — xem đáp án**
 
@@ -124,7 +125,7 @@ Bấm **Chấm & thẻ tiếp**: ghi điểm cho *mọi* trường hợp trong �
 | --- | --- |
 | `Enter` (ô có chữ) | gửi câu trả lời |
 | `Enter` (ô trống, đang gõ trường hợp) | ngừng và xem đáp án |
-| `Enter` (ô trống, đang gõ ví dụ) | bỏ qua phần ví dụ còn lại |
+| `Enter` (ô trống, đang gõ ví dụ) | không nhớ ví dụ, đi tiếp (chấm Khó) |
 
 Ô nhập tự focus mỗi khi câu hỏi đổi, nên gõ liên tục không cần chuột. Không còn
 phím `Space` / `1` `2` `3` `4` như bản thẻ lật cũ — điểm giờ tự chấm.
@@ -136,8 +137,8 @@ trường hợp** trong âm đó:
 
 | Kết quả gõ | Điểm | Nhãn |
 | --- | --- | --- |
-| Đúng trường hợp **+ ít nhất 1 từ ví dụ** | 4 | Tốt |
-| Đúng trường hợp, **không gõ được ví dụ nào** (bỏ qua hoặc gõ sai hết) | 3 | Khó |
+| Đúng trường hợp **+ 1 từ ví dụ** (bất kỳ từ nào trong danh sách) | 4 | Tốt |
+| Đúng trường hợp, **không nhớ được ví dụ nào** (bỏ qua hoặc gõ sai) | 3 | Khó |
 | **Thiếu** trường hợp (không gõ ra) | 1 | Sai |
 | Đúng trường hợp, mà trường hợp đó **chưa có ví dụ nào trong dữ liệu** | 4 | Tốt |
 

@@ -69,11 +69,10 @@ export function useStudyQueue() {
       if (already.includes(hit)) return 'dup'
 
       setExamplesFound((m) => ({ ...m, [pending.id]: [...already, hit] }))
-      if (already.length + 1 === pending.examples.length) {
-        // Đã gõ hết ví dụ của trường hợp này -> quay lại gõ trường hợp.
-        setPendingId(null)
-        if (found.length === group.graphemes.length) setPhase('summary')
-      }
+      // Một ví dụ đúng là đủ — seed nhiều ví dụ chỉ để có nhiều đáp án chấp nhận
+      // được, không bắt gõ hết.
+      setPendingId(null)
+      if (found.length === group.graphemes.length) setPhase('summary')
       return 'hit'
     },
     [group, pending, examplesFound, found],
