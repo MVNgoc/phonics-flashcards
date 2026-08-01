@@ -27,13 +27,13 @@ npm install
 npm run dev      # http://localhost:5173
 ```
 
-Lần đầu mở app đã có sẵn data mẫu: 5 nguyên âm + 5 phụ âm (≈33 trường hợp), nhãn
-âm ghi bằng IPA (`/æ/`, `/ʃ/`…). Mọi thứ đều sửa được ở `/manage` — nhãn là text
-tự do, muốn ghi `a ngắn` thay cho `/æ/` cũng được.
+Lần đầu mở app đã có sẵn bộ âm đầy đủ: **21 nguyên âm + 11 phụ âm = 32 âm, 149
+trường hợp, 837 từ ví dụ**, nằm trong `src/lib/seed.ts` (nên nó ở trong git, mở
+máy mới là có ngay). Mọi thứ đều sửa được ở `/manage` — nhãn âm là text tự do.
 
 ```bash
 npm run typecheck   # tsc --noEmit
-npm test            # unit test cho sm2.ts + storage.ts (35 test)
+npm test            # unit test cho sm2.ts, storage.ts, seed.ts (43 test)
 npm run test:watch  # vitest watch mode
 npm run build       # typecheck + build ra dist/
 npm run preview     # xem thử bản build
@@ -291,10 +291,12 @@ và **top 5 trường hợp sai nhiều nhất** vẽ bằng div (không dùng t
   (gồm cả tiến độ ôn tập).
 - **Import**: `/manage` → **Import JSON**. Lưu ý: import **ghi đè toàn bộ** dữ liệu
   hiện tại — nó là restore backup. Muốn *thêm* âm mới thì dùng **Nhập nhanh**.
-- Dữ liệu ở localStorage key `phonics-flashcard:v1`, dạng `{ version, data }`.
+- Dữ liệu ở localStorage key `phonics-flashcard:v2`, dạng `{ version, data }`.
   Xoá site data của trình duyệt = mất sạch, nên export định kỳ.
 - Backup `version: 1` (bản còn trường `ipa`) vẫn import được: `storage.ts` tự bỏ
-  `ipa`, giữ nguyên ghi chú / cách viết / tiến độ.
+  `ipa`, giữ nguyên nhãn / trường hợp / tiến độ.
+- Đổi `STORAGE_KEY` (v1 → v2) là cách chủ động vứt hết dữ liệu cũ và nạp lại seed;
+  key cũ được xoá luôn lúc load. Chỉ làm khi bộ âm thay đổi tận gốc.
 - Mang sang máy khác: Export ở máy A → Import ở máy B.
 
 ## Dark mode
@@ -347,7 +349,8 @@ src/
 │   ├── sm2.test.ts         30 test
 │   ├── storage.ts          load/save/migrate/export/import
 │   ├── storage.test.ts     5 test
-│   ├── seed.ts             data mẫu
+│   ├── seed.ts             bộ âm mặc định (32 âm)
+│   ├── seed.test.ts        kiểm tra bộ âm không có nhãn/trường hợp trùng
 │   └── types.ts
 └── pages/                  StudyPage, ManagePage, StatsPage
 ```
@@ -367,7 +370,7 @@ backend. Test bằng vitest, chỉ test phần logic thuần.
 | Luồng hỏi xen kẽ (đúng → hỏi ví dụ ngay) | `submitSpelling` / `submitExample` trong `useStudyQueue.ts` |
 | Cửa sổ "due sắp tới" (1–3 ngày) | `buildQueue` trong `sm2.ts` |
 | Độ chặt của so khớp | `normalize` trong `sm2.ts` |
-| Data mẫu | `seed.ts` |
+| Bộ âm mặc định | `seed.ts` (sửa xong chạy `npm test` để bắt trùng lặp) |
 
 Hai ngưỡng dễ lẫn nhau, cố ý để rời nhau:
 

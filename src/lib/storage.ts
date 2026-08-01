@@ -1,7 +1,12 @@
 import type { AppData, StoredState } from './types'
 import { seedData } from './seed'
 
-export const STORAGE_KEY = 'phonics-flashcard:v1'
+/**
+ * Đổi key = vứt hẳn dữ liệu cũ và nạp lại seed. Chỉ làm khi bộ âm thay đổi tận
+ * gốc và tiến độ ôn cũ không còn ý nghĩa.
+ */
+export const STORAGE_KEY = 'phonics-flashcard:v2'
+const LEGACY_KEYS = ['phonics-flashcard:v1']
 export const THEME_KEY = 'phonics-flashcard:theme'
 export const CURRENT_VERSION = 2
 
@@ -24,6 +29,7 @@ export function migrate(stored: StoredState): AppData {
 
 export function loadData(): AppData {
   try {
+    for (const key of LEGACY_KEYS) localStorage.removeItem(key)
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return seedData()
     const parsed = JSON.parse(raw) as StoredState
