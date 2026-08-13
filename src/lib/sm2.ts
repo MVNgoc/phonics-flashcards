@@ -62,13 +62,29 @@ export function newReviewState(): ReviewState {
   }
 }
 
+/** Chặn interval để nextDue không bay đi vài năm (và không tràn ngày hợp lệ). */
+export const MAX_INTERVAL = 365
+
 /**
  * SM-2 update. Ease is always adjusted by the grade; only repetitions/interval
  * branch on pass (grade >= 3) vs fail.
+ *
+ * Chấm lại trong cùng một ngày (nhóm bị hỏi lại trong một phiên) thì lần đúng
+ * thứ hai trở đi KHÔNG đẩy lịch tiếp: nếu không, mỗi vòng nhắc lại lại nhân
+ * interval lên, một trường hợp có thể "đã thuộc" chỉ sau một buổi và nextDue
+ * nhảy đi vài năm. Sai thì vẫn tính lại lịch (quên là quên) nhưng ease chỉ bị
+ * trừ một lần trong ngày, để luyện nhiều vòng không đẩy ease xuống sàn 1.3.
  */
 export function review(state: ReviewState, grade: Grade, today: string): ReviewState {
   const q = grade
-  const easeFactor = Math.max(1.3, state.easeFactor + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02)))
+  const sameDay = state.lastReviewed === today
+  if (sameDay && q >= 3) {
+    return { ...state, correctCount: state.correctCount + 1 }
+  }
+
+  const easeFactor = sameDay
+    ? state.easeFactor
+    : Math.max(1.3, state.easeFactor + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02)))
 
   let repetitions: number
   let interval: number
@@ -77,7 +93,7 @@ export function review(state: ReviewState, grade: Grade, today: string): ReviewS
     repetitions = state.repetitions + 1
     if (repetitions === 1) interval = 1
     else if (repetitions === 2) interval = 6
-    else interval = Math.round(state.interval * easeFactor)
+    else interval = Math.min(MAX_INTERVAL, Math.round(state.interval * easeFactor))
   } else {
     repetitions = 0
     interval = 1
@@ -169,6 +185,16 @@ export function buildQueue(
   ]
 }
 
+export interface QueueOptions {
+  /**
+   * Bỏ những trường hợp đã chấm trong hôm nay. Mặc định bật: chấm lại trong
+   * ngày không đẩy lịch thêm (xem `review`), nên hỏi lại chỉ làm mất thời gian
+   * và có thể làm tụt tiến độ. Nhờ suy ra từ `lastReviewed` mà reload trang
+   * không làm nhóm đã học xong hôm nay quay lại hàng đợi.
+   */
+  skipDoneToday?: boolean
+}
+
 /**
  * Study unit is a whole sound group: the group inherits the priority of its most
  * urgent grapheme, so we can reuse buildQueue and just dedupe by phoneme.
@@ -177,6 +203,7 @@ export function buildGroupQueue(
   phonemes: Phoneme[],
   today: string,
   rng: Rng = Math.random,
+  { skipDoneToday = true }: QueueOptions = {},
 ): string[] {
   // (bucket, key) càng nhỏ càng gấp. bucket 0 = quá hạn, 1 = mới, 2 = sắp đến hạn.
   const ranked: { id: string; bucket: number; key: number }[] = []
@@ -184,6 +211,7 @@ export function buildGroupQueue(
   for (const p of phonemes) {
     let best: { bucket: number; key: number } | null = null
     for (const g of p.graphemes) {
+      if (skipDoneToday && g.review.lastReviewed === today) continue
       const due = g.review.nextDue
       let cur: { bucket: number; key: number } | null = null
       if (due === null) {

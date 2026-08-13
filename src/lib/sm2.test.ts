@@ -7,6 +7,7 @@ import {
   daysBetween,
   gradeFromTyping,
   isLearned,
+  MAX_INTERVAL,
   newReviewState,
   normalize,
   review,
@@ -93,6 +94,12 @@ describe('intervals on a pass', () => {
     expect(s.nextDue).toBe('2026-08-15')
   })
 
+  it('interval không vượt MAX_INTERVAL', () => {
+    const s = review(state({ repetitions: 9, interval: 300, easeFactor: 2.5 }), 4, TODAY)
+    expect(s.interval).toBe(MAX_INTERVAL)
+    expect(s.nextDue).toBe(addDays(TODAY, MAX_INTERVAL))
+  })
+
   it('uses the updated ease, not the old one', () => {
     const s = review(state({ repetitions: 3, interval: 10, easeFactor: 2.5 }), 5, TODAY)
     expect(s.easeFactor).toBeCloseTo(2.6, 10)
@@ -103,6 +110,39 @@ describe('intervals on a pass', () => {
     const s = review(state({ correctCount: 2 }), 3, TODAY)
     expect(s.correctCount).toBe(3)
     expect(s.wrongCount).toBe(0)
+  })
+})
+
+describe('chấm lại trong cùng một ngày', () => {
+  it('đúng lần thứ hai trong ngày không đẩy lịch thêm', () => {
+    const first = review(state(), 4, TODAY)
+    const again = review(first, 4, TODAY)
+    expect(again.repetitions).toBe(first.repetitions)
+    expect(again.interval).toBe(first.interval)
+    expect(again.nextDue).toBe(first.nextDue)
+    expect(again.easeFactor).toBe(first.easeFactor)
+    expect(again.correctCount).toBe(first.correctCount + 1)
+  })
+
+  it('ôn cả buổi cũng không thể "thuộc" trong một ngày', () => {
+    let s = state()
+    for (let i = 0; i < 20; i++) s = review(s, 4, TODAY)
+    expect(s.repetitions).toBe(1)
+    expect(isLearned(s)).toBe(false)
+  })
+
+  it('sai thì vẫn tính dù đã chấm trong ngày', () => {
+    const s = review(review(state({ repetitions: 4, interval: 20 }), 4, TODAY), 1, TODAY)
+    expect(s.repetitions).toBe(0)
+    expect(s.interval).toBe(1)
+    expect(s.wrongCount).toBe(1)
+  })
+
+  it('ease chỉ bị trừ một lần trong ngày dù sai nhiều vòng', () => {
+    const first = review(state(), 1, TODAY)
+    let s = first
+    for (let i = 0; i < 5; i++) s = review(s, 1, TODAY)
+    expect(s.easeFactor).toBeCloseTo(first.easeFactor, 10)
   })
 })
 
@@ -190,6 +230,40 @@ describe('buildQueue', () => {
       ],
     }
     expect(buildGroupQueue([...phonemes, far], TODAY, noShuffle)).not.toContain('p3')
+  })
+})
+
+describe('buildGroupQueue: nhóm đã học xong hôm nay', () => {
+  /** Nhóm hai trường hợp, cả hai vừa chấm hôm nay và hẹn lại ngày mai. */
+  const doneToday: Phoneme = {
+    id: 'done',
+    note: '/done/',
+    type: 'vowel',
+    graphemes: [
+      { id: 'd1', spelling: 'a', examples: [], review: state({ lastReviewed: TODAY, nextDue: '2026-08-01', interval: 1, repetitions: 1 }) },
+      { id: 'd2', spelling: 'b', examples: [], review: state({ lastReviewed: TODAY, nextDue: '2026-08-06', interval: 6, repetitions: 2 }) },
+    ],
+  }
+
+  it('không hỏi lại — reload trang cũng không kéo nhóm đó về hàng đợi', () => {
+    expect(buildGroupQueue([doneToday], TODAY, noShuffle)).toEqual([])
+  })
+
+  it('nhóm mới chấm một nửa thì vẫn còn trong hàng đợi', () => {
+    const half: Phoneme = {
+      ...doneToday,
+      id: 'half',
+      graphemes: [doneToday.graphemes[0], { id: 'd3', spelling: 'c', examples: [], review: state() }],
+    }
+    expect(buildGroupQueue([half], TODAY, noShuffle)).toEqual(['half'])
+  })
+
+  it('sang ngày mai thì hỏi lại bình thường', () => {
+    expect(buildGroupQueue([doneToday], '2026-08-01', noShuffle)).toEqual(['done'])
+  })
+
+  it('skipDoneToday: false = luyện lại tự do, hỏi cả nhóm đã xong', () => {
+    expect(buildGroupQueue([doneToday], TODAY, noShuffle, { skipDoneToday: false })).toEqual(['done'])
   })
 })
 
