@@ -15,10 +15,29 @@ export interface GraphemeOutcome {
   grade: Grade
 }
 
+/** Trường hợp đã gõ đúng nhưng chưa gõ được ví dụ nào — còn nợ ví dụ. */
+function needsExample(g: Grapheme, examplesFound: Record<string, string[]>): boolean {
+  return g.examples.length > 0 && (examplesFound[g.id] ?? []).length === 0
+}
+
+/** Chỉ xong khi đủ trường hợp *và* không còn trường hợp nào nợ ví dụ. */
+function isGroupDone(
+  group: Phoneme,
+  found: string[],
+  examplesFound: Record<string, string[]>,
+): boolean {
+  return (
+    found.length === group.graphemes.length &&
+    group.graphemes.every((g) => !needsExample(g, examplesFound))
+  )
+}
+
 /**
  * Một phiên học. Đơn vị là một âm và luồng gõ xen kẽ:
  * gõ đúng một trường hợp -> hỏi ngay ví dụ cho đúng trường hợp đó -> quay lại gõ
- * trường hợp tiếp. Gõ sai thì không hỏi ví dụ. Điểm suy ra từ những gì đã gõ.
+ * trường hợp tiếp. Gõ sai thì không hỏi ví dụ. Bỏ qua ví dụ thì trường hợp đó
+ * vẫn còn nợ, quay lại gõ ví dụ lúc nào cũng được cho tới khi xem đáp án.
+ * Điểm suy ra từ những gì đã gõ.
  */
 export function useStudyQueue() {
   const { data, gradeCard } = useStore()
@@ -47,16 +66,17 @@ export function useStudyQueue() {
       }
       if (found.includes(hit.id)) return 'dup'
 
-      setFound([...found, hit.id])
+      const nextFound = [...found, hit.id]
+      setFound(nextFound)
       if (hit.examples.length > 0) {
         // Đúng -> hỏi ví dụ cho chính trường hợp này.
         setPendingId(hit.id)
-      } else if (found.length + 1 === group.graphemes.length) {
+      } else if (isGroupDone(group, nextFound, examplesFound)) {
         setPhase('summary')
       }
       return 'hit'
     },
-    [group, found],
+    [group, found, examplesFound],
   )
 
   const submitExample = useCallback(
@@ -68,22 +88,37 @@ export function useStudyQueue() {
       const already = examplesFound[pending.id] ?? []
       if (already.includes(hit)) return 'dup'
 
-      setExamplesFound((m) => ({ ...m, [pending.id]: [...already, hit] }))
+      const nextExamples = { ...examplesFound, [pending.id]: [...already, hit] }
+      setExamplesFound(nextExamples)
       // Một ví dụ đúng là đủ — seed nhiều ví dụ chỉ để có nhiều đáp án chấp nhận
       // được, không bắt gõ hết.
       setPendingId(null)
-      if (found.length === group.graphemes.length) setPhase('summary')
+      if (isGroupDone(group, found, nextExamples)) setPhase('summary')
       return 'hit'
     },
     [group, pending, examplesFound, found],
   )
 
-  /** Thôi không gõ thêm ví dụ cho trường hợp hiện tại, quay lại gõ trường hợp. */
+  /**
+   * Chưa nghĩ ra ví dụ: quay lại gõ trường hợp, trường hợp này vẫn nằm trong
+   * danh sách nợ ví dụ để gõ bù sau.
+   */
   const skipExamples = useCallback(() => {
     if (!group) return
     setPendingId(null)
-    if (found.length === group.graphemes.length) setPhase('summary')
-  }, [group, found])
+    if (isGroupDone(group, found, examplesFound)) setPhase('summary')
+  }, [group, found, examplesFound])
+
+  /** Gõ bù ví dụ cho một trường hợp đã đúng trước đó. */
+  const revisitExamples = useCallback(
+    (graphemeId: string) => {
+      if (!group || !found.includes(graphemeId)) return
+      const g = group.graphemes.find((x) => x.id === graphemeId)
+      if (!g || g.examples.length === 0) return
+      setPendingId(graphemeId)
+    },
+    [group, found],
+  )
 
   /** Bỏ cuộc phần còn lại của nhóm và xem đáp án. */
   const finish = useCallback(() => {
@@ -127,8 +162,13 @@ export function useStudyQueue() {
     reset()
   }, [group, outcomes, gradeCard, today, reset])
 
+  /**
+   * Luyện lại khi hôm nay đã hết thẻ: hỏi cả những nhóm đã chấm trong ngày. Ôn
+   * thêm không đẩy lịch tiếp (xem `review`) nên đây là luyện tay, không tính
+   * vào tiến độ.
+   */
   const restart = useCallback(() => {
-    setQueue(buildGroupQueue(data.phonemes, today))
+    setQueue(buildGroupQueue(data.phonemes, today, Math.random, { skipDoneToday: false }))
     setReviewed(0)
     reset()
   }, [data.phonemes, today, reset])
@@ -140,11 +180,13 @@ export function useStudyQueue() {
     outcomes,
     rejected,
     foundCount: found.length,
+    allFound: group ? found.length === group.graphemes.length : false,
     remaining: queue.length,
     reviewed,
     submitSpelling,
     submitExample,
     skipExamples,
+    revisitExamples,
     finish,
     commit,
     restart,

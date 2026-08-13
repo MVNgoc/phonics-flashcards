@@ -8,6 +8,7 @@ import { seedData } from './seed'
 export const STORAGE_KEY = 'phonics-flashcard:v2'
 const LEGACY_KEYS = ['phonics-flashcard:v1']
 export const THEME_KEY = 'phonics-flashcard:theme'
+export const SETTINGS_KEY = 'phonics-flashcard:settings'
 export const CURRENT_VERSION = 2
 
 export function uid(): string {

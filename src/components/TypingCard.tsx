@@ -10,9 +10,12 @@ interface Props {
   outcomes: GraphemeOutcome[]
   rejected: string[]
   foundCount: number
+  allFound: boolean
+  showCaseCount: boolean
   onSubmitSpelling: (text: string) => MatchResult
   onSubmitExample: (text: string) => MatchResult
   onSkipExamples: () => void
+  onRevisitExamples: (graphemeId: string) => void
   onFinish: () => void
   onCommit: () => void
 }
@@ -73,19 +76,31 @@ function AnswerInput({
   )
 }
 
-function GroupHeader({ group }: { group: Phoneme }) {
+function GroupHeader({ group, showCaseCount }: { group: Phoneme; showCaseCount: boolean }) {
   return (
     <div className="text-center">
       <div className="text-5xl font-bold">{group.note || '(nhóm chưa có nhãn)'}</div>
       <div className="mt-2 text-xs uppercase tracking-widest text-slate-400">
-        {group.type === 'vowel' ? 'nguyên âm' : 'phụ âm'} · {group.graphemes.length} trường hợp
+        {group.type === 'vowel' ? 'nguyên âm' : 'phụ âm'}
+        {showCaseCount && ` · ${group.graphemes.length} trường hợp`}
       </div>
     </div>
   )
 }
 
-/** Những trường hợp đã gõ đúng, kèm ví dụ đã gõ được. */
-function FoundList({ outcomes }: { outcomes: GraphemeOutcome[] }) {
+/**
+ * Những trường hợp đã gõ đúng, kèm ví dụ đã gõ được. Trường hợp còn nợ ví dụ có
+ * nút để gõ bù bất cứ lúc nào.
+ */
+function FoundList({
+  outcomes,
+  activeId,
+  onRevisitExamples,
+}: {
+  outcomes: GraphemeOutcome[]
+  activeId: string | null
+  onRevisitExamples: (graphemeId: string) => void
+}) {
   const done = outcomes.filter((o) => o.spellingFound)
   if (done.length === 0) return null
 
@@ -99,6 +114,19 @@ function FoundList({ outcomes }: { outcomes: GraphemeOutcome[] }) {
               {ex}
             </span>
           ))}
+          {o.grapheme.examples.length > 0 &&
+            o.examplesFound.length === 0 &&
+            (o.grapheme.id === activeId ? (
+              <span className="text-sm text-sky-600 dark:text-sky-400">← đang gõ ví dụ</span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onRevisitExamples(o.grapheme.id)}
+                className="rounded-full border border-dashed border-slate-300 px-3 py-1 text-sm text-slate-500 hover:border-sky-500 hover:text-sky-600 dark:border-slate-600 dark:text-slate-400"
+              >
+                + ví dụ
+              </button>
+            ))}
         </li>
       ))}
     </ul>
@@ -111,17 +139,23 @@ function AnswerPhase({
   outcomes,
   rejected,
   foundCount,
+  allFound,
+  showCaseCount,
   onSubmitSpelling,
   onSubmitExample,
   onSkipExamples,
+  onRevisitExamples,
   onFinish,
 }: Omit<Props, 'phase' | 'onCommit'>) {
   const typedExamples = pending ? (outcomes.find((o) => o.grapheme.id === pending.id)?.examplesFound ?? []) : []
   const missingExamples = pending ? pending.examples.length - typedExamples.length : 0
+  const owing = outcomes.filter(
+    (o) => o.spellingFound && o.grapheme.examples.length > 0 && o.examplesFound.length === 0,
+  ).length
 
   return (
     <>
-      <GroupHeader group={group} />
+      <GroupHeader group={group} showCaseCount={showCaseCount} />
 
       <p className="text-center text-sm text-slate-500 dark:text-slate-400">
         {pending ? (
@@ -130,12 +164,18 @@ function AnswerPhase({
             <span className="font-bold text-slate-900 dark:text-slate-100">{pending.spelling}</span>{' '}
             đọc thành âm này:
           </>
+        ) : allFound ? (
+          'Đủ trường hợp rồi — gõ bù ví dụ còn thiếu hoặc xem đáp án.'
         ) : (
           'Những trường hợp nào tạo nên âm này?'
         )}
       </p>
 
-      <FoundList outcomes={outcomes} />
+      <FoundList
+        outcomes={outcomes}
+        activeId={pending?.id ?? null}
+        onRevisitExamples={onRevisitExamples}
+      />
 
       {rejected.length > 0 && (
         <div className="flex flex-wrap gap-2">
@@ -153,7 +193,13 @@ function AnswerPhase({
       <div className="flex flex-col items-center gap-3">
         <AnswerInput
           key={pending ? `ex-${pending.id}-${typedExamples.length}` : 'spelling'}
-          placeholder={pending ? `ví dụ cho "${pending.spelling}"` : 'gõ trường hợp, Enter'}
+          placeholder={
+            pending
+              ? `ví dụ cho "${pending.spelling}"`
+              : allFound
+                ? 'Enter để xem đáp án'
+                : 'gõ trường hợp, Enter'
+          }
           onSubmit={pending ? onSubmitExample : onSubmitSpelling}
           onEmpty={pending ? onSkipExamples : onFinish}
         />
@@ -166,13 +212,15 @@ function AnswerPhase({
               onClick={onSkipExamples}
               className="rounded-lg border border-slate-300 px-3 py-1.5 font-medium dark:border-slate-600"
             >
-              Không nhớ, bỏ qua →
+              Chưa nghĩ ra, để sau →
             </button>
           </div>
         ) : (
-          <div className="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
+          <div className="flex flex-wrap items-center justify-center gap-3 text-sm text-slate-500 dark:text-slate-400">
             <span>
-              đã đúng {foundCount}/{group.graphemes.length}
+              đã đúng {foundCount}
+              {showCaseCount && `/${group.graphemes.length}`}
+              {owing > 0 && ` · nợ ${owing} ví dụ`}
             </span>
             <button
               type="button"
@@ -197,7 +245,8 @@ function SummaryPhase({
 
   return (
     <>
-      <GroupHeader group={group} />
+      {/* Đã tới lúc xem đáp án nên luôn hiện số trường hợp. */}
+      <GroupHeader group={group} showCaseCount />
       <p className="text-center text-sm text-slate-500 dark:text-slate-400">
         {missed.length === 0
           ? 'Đúng hết trường hợp.'
