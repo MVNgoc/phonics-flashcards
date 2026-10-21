@@ -190,7 +190,10 @@ function SpellingLookup({ query, setQuery, go }: LookupProps) {
 
       {result.related.length > 0 && (
         <details className="cp-panel p-4">
-          <summary className="cursor-pointer text-sm font-medium">
+          <summary
+            title={`Các cách viết dài hơn có chứa "${q}", có thể đọc khác hẳn. Bấm một cách viết để tra nó.`}
+            className="cursor-pointer text-sm font-medium"
+          >
             Cách viết khác có chứa "{q}" ({result.related.length})
           </summary>
           <ul className="mt-3 space-y-2">
