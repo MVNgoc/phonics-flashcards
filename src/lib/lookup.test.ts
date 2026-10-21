@@ -102,7 +102,7 @@ describe('lookupSpelling', () => {
   })
 
   it('chạy được trên bộ âm soạn sẵn', () => {
-    expect(notes(lookupSpelling(builtinSeedData(), 'y').exact)).toEqual(['/i/', '/igh/'])
+    expect(notes(lookupSpelling(builtinSeedData(), 'y').exact)).toEqual(['/i/', '/igh/', '/y/'])
   })
 })
 

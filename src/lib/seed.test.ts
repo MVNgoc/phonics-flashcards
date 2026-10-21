@@ -6,7 +6,7 @@ describe('bộ âm soạn sẵn', () => {
   it('có đủ nguyên âm và phụ âm', () => {
     const { phonemes } = builtinSeedData()
     expect(phonemes.filter((p) => p.type === 'vowel')).toHaveLength(21)
-    expect(phonemes.filter((p) => p.type === 'consonant')).toHaveLength(11)
+    expect(phonemes.filter((p) => p.type === 'consonant')).toHaveLength(29)
   })
 })
 

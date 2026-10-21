@@ -10,7 +10,14 @@ type SeedSpec = [label: string, type: PhonemeType, graphemes: [string, string[]]
  */
 const SEED: SeedSpec[] = [
   // ---------- nguyên âm ----------
-  ['/a/', 'vowel', [['a', ['cat', 'hat', 'map', 'tab', 'bag', 'back']]]],
+  [
+    '/a/',
+    'vowel',
+    [
+      ['a', ['cat', 'hat', 'map', 'tab', 'bag', 'back']],
+      ['ea', ['heart']],
+    ],
+  ],
   [
     '/e/',
     'vowel',
@@ -33,7 +40,9 @@ const SEED: SeedSpec[] = [
     'vowel',
     [
       ['o', ['hot', 'stop', 'top', 'on', 'off', 'long']],
-      ['a', ['water', 'wash', 'watch', 'want', 'quantity']],
+      ['a', ['talk', 'walk', 'wall', 'call', 'ball']],
+      ['wa', ['water', 'wash', 'watch', 'want']],
+      ['qua', ['quantity', 'quality', 'quantitative', 'qualitative']],
     ],
   ],
   [
@@ -263,7 +272,6 @@ const SEED: SeedSpec[] = [
     ],
   ],
   ['/yoor/', 'vowel', [['ure', ['pure', 'cure', 'secure', 'endure', 'endurance', 'during']]]],
-
   // ---------- phụ âm ----------
   [
     '/b/',
@@ -373,6 +381,181 @@ const SEED: SeedSpec[] = [
       ['kn', ['knight', 'knee', 'knew', 'know', 'knock', 'knife']],
       ['gn', ['gnarl', 'gnarly', 'gnome', 'gnaw', 'gnu', 'design']],
       ['ne', ['marine', 'sardines', 'machine', 'cuisine', 'nine', 'vine']],
+    ],
+  ],
+  [
+    '/ng/',
+    'consonant',
+    [
+      ['ng', ['long', 'sing', 'song', 'singer', 'thing', 'king']],
+      ['nk', ['pink', 'thank', 'think', 'bank', 'link', 'ink']],
+      ['nc', ['sync', 'uncle', 'function', 'concrete', 'distinct', 'sanction']],
+      ['nx', ['sphinx', 'jinx', 'winx', 'manx', 'anxious', 'sphynx']],
+    ],
+  ],
+  [
+    '/p/',
+    'consonant',
+    [
+      ['p', ['pencil', 'part', 'people', 'public', 'peak', 'pull']],
+      ['pp', ['support', 'shopping', 'happy', 'app', 'mapping', 'apple']],
+    ],
+  ],
+  [
+    '/r/',
+    'consonant',
+    [
+      ['r', ['right', 'race', 'render', 'river', 'rice', 'ruler']],
+      ['rr', ['mirror', 'marry', 'horror', 'arrive', 'arrow', 'array']],
+      ['wr (w câm)', ['wrong', 'write', 'written', 'wrote', 'Wren', 'wrap']],
+      ['rh', ['(h câm): rhythm', 'rhythmic', 'rhino', 'rhyme', 'rhetoric', 'rhapsody']],
+    ],
+  ],
+  [
+    '/s/',
+    'consonant',
+    [
+      ['s', ['summer', 'sorry', 'stew', 'save', 'sleep', 'spy']],
+      ['ss', ['discuss', 'class', 'pass', 'dress', 'boss', 'miss']],
+      ['ce', ['center', 'cent', 'ceiling', 'central', 'accept', 'accent']],
+      ['ce (ce đứng cuối - e câm)', ['voice', 'chance', 'choice', 'France', 'since', 'sauce']],
+      ['c', ['cinema', 'medicine', 'city', 'circle', 'cigar', 'citizen']],
+      ['cy', ['cycle', 'bicycle', 'cynical', 'cylinder', 'recycle', 'cypher']],
+      ['se', ['mouse', 'house', 'horse', 'phase', 'case', 'base']],
+      ['sc', ['science', 'scientific', 'scientist', 'muscle', 'scene', 'ascend']],
+      ['st (t câm)', ['whistle', 'hustle', 'castle', 'listen', 'Christmas', 'fasten']],
+      ['ps', ['psycho', 'psyche', 'pseudo', 'psychic', 'psalm', 'psalmic']],
+    ],
+  ],
+  [
+    '/kw/',
+    'consonant',
+    [
+      ['qu', ['question', 'queen', 'quite', 'quality', 'quarter', 'quick']],
+      ['kw', ['awkward', 'backward']],
+    ],
+  ],
+  [
+    '/t/',
+    'consonant',
+    [
+      ['t', ['teacher', 'Tuesday', 'tablet', 'after', 'tap', 'tip']],
+      ['tt', ['attack', 'latter', 'little', 'better', 'button', 'letter']],
+      ['ed', ['laughed', 'linked', 'tapped', 'washed', 'draped', 'searched']],
+      ['pt (p câm)', ['receipt', 'pterygoid', 'pteridology', 'pterodactyl']],
+      ['bt (b câm)', ['doubt', 'doubtful', 'debt', 'subtle']],
+    ],
+  ],
+  [
+    '/v/',
+    'consonant',
+    [
+      ['v', ['vacation', 'victory', 'value', 'view', 'never', 'travel']],
+      ['ve', ['behave', 'cave', 'save', 'five', 'move', 'wave']],
+    ],
+  ],
+  [
+    '/w/',
+    'consonant',
+    [
+      ['w', ['wish', 'wonder', 'woman', 'women', 'way', 'wash']],
+      ['wh', ['where', 'when', 'why', 'whey', 'what', 'which']],
+      ['u', ['language', 'penguin', 'suite', 'cuisine', 'guava', 'languish']],
+    ],
+  ],
+  [
+    '/ks/',
+    'consonant',
+    [
+      ['x', ['Mexico', 'fox', 'tax', 'fax', 'taxi', 'box']],
+      ['ks', ['books', 'sparks', 'looks', 'hunks']],
+      ['cks', ['trucks', 'tricks', 'chopsticks', 'packs']],
+      ['kes', ['snakes', 'mistakes', 'strokes', 'ShaKespeare']],
+      ['cs', ['panics', 'basics', 'lyrics', 'ethics']],
+    ],
+  ],
+  [
+    '/gz/',
+    'consonant',
+    [
+      ['x', ['example', 'exhausted', 'exam', 'exist', 'executive', 'examiner']],
+      ['gs', ['pigs']],
+      ['ggs', ['eggs']],
+      ['gues', ['dialogues', 'leagues']],
+    ],
+  ],
+  [
+    '/ksh/',
+    'consonant',
+    [
+      ['x', ['luxury', 'sexual', 'sexuality', 'flexure', 'fluxure', 'sexually']],
+      ['xi', ['anxious', 'noxious', 'innoxious', 'obnoxious']],
+    ],
+  ],
+  ['/gzh/', 'consonant', [['x', ['luxurious', 'luxuriant', 'luxuriance', 'luxuriate']]]],
+  ['/y/', 'consonant', [['y', ['young', 'yellow', 'yet', 'yep', 'yell', 'yin']]]],
+  [
+    '/z/',
+    'consonant',
+    [
+      ['z', ['zero', 'zone', 'zoom', 'Topzone', 'crazy', 'lazy']],
+      ['zz', ['drizzle', 'puzzle', 'nozzle', 'jazz', 'dizzy', 'fizz']],
+      ['es', ['shelves', 'tries', 'lives', 'goes', 'does', 'cries']],
+      ['se', ['organise', 'rise', 'raise', 'rose', 'please', 'cheese']],
+      ['ze', ['organize', 'freeze', 'froze', 'size', 'gaze', 'doze']],
+      ['x', ['anxiety', 'xylophone', 'xylitol', 'xerox', 'xenon', 'xenophobia']],
+    ],
+  ],
+  [
+    '/ch/',
+    'consonant',
+    [
+      ['ch', ['chicken', 'chair', 'check', 'child', 'cheese', 'choice']],
+      ['tch (t câm)', ['watch', 'match', 'hatch', 'catch', 'bitch']],
+      ['ture', ['nature', 'picture', 'future', 'mixture', 'culture', 'torture']],
+    ],
+  ],
+  [
+    '/sh/',
+    'consonant',
+    [
+      ['sh', ['shark', 'shack', 'ship', 'shop', 'shoes', 'share']],
+      ['ch', ['champagne: Chanel', 'chic', 'chef', 'Chicago', 'machine']],
+      ['ti', ['ratio', 'nation', 'potential', 'caution', 'auction', 'conversation']],
+      ['ci', ['special', 'social', 'official', 'racial', 'ancient', 'facial']],
+      ['ssi', ['passion', 'discussion', 'mission', 'session', 'admission', 'obsession']],
+      [
+        'ce',
+        [
+          'ocean',
+          'cetacean',
+          'cretaceous',
+          'crustacean',
+          'oceanography',
+          'oceanographically',
+        ],
+      ],
+      ['s', ['sure', 'sugar', 'ensure', 'insure', 'insurance', 'sugary']],
+      ['ss', ['issue', 'tissue', 'pressure', 'assure']],
+    ],
+  ],
+  [
+    '/th/',
+    'consonant',
+    [
+      ['th (UV)', ['three', 'thank', 'think', 'thirsty', 'thirty']],
+      ['th (V)', ['this', 'that', 'there', 'these', 'those', 'then']],
+    ],
+  ],
+  [
+    '/zh/',
+    'consonant',
+    [
+      ['si', ['version', 'decision', 'explosion', 'vision', 'Asia', 'Asian']],
+      ['s', ['visual', 'usual', 'casual', 'pleasure', 'measure', 'treasure']],
+      ['z', ['azure', 'seizure', 'brazier', 'glazier']],
+      ['g', ['courgette']],
+      ['ge', ['camouflage', 'beige', 'mirage', 'collage', 'rouge', 'Peugeot']],
     ],
   ],
 ]
