@@ -142,6 +142,9 @@ interface LookupProps {
   go: Go
 }
 
+const relatedHelp = (q: string) =>
+  `Các cách viết dài hơn có chứa "${q}", có thể đọc khác hẳn. Bấm một cách viết để tra nó.`
+
 function SpellingLookup({ query, setQuery, go }: LookupProps) {
   const { data } = useStore()
   const q = normalizeQuery(query)
@@ -190,11 +193,25 @@ function SpellingLookup({ query, setQuery, go }: LookupProps) {
 
       {result.related.length > 0 && (
         <details className="cp-panel p-4">
-          <summary
-            title={`Các cách viết dài hơn có chứa "${q}", có thể đọc khác hẳn. Bấm một cách viết để tra nó.`}
-            className="cursor-pointer text-sm font-medium"
-          >
+          <summary className="cursor-pointer text-sm font-medium">
             Cách viết khác có chứa "{q}" ({result.related.length})
+            <span className="group relative ml-2 inline-block">
+              <button
+                type="button"
+                // Nằm trong <summary>: chặn để bấm ⓘ (chạm trên điện thoại) không mở/đóng mục.
+                onClick={(e) => e.preventDefault()}
+                aria-label={relatedHelp(q)}
+                className="text-slate-400 hover:text-sky-600 focus:text-sky-600 focus:outline-none dark:hover:text-sky-400 dark:focus:text-sky-400"
+              >
+                ⓘ
+              </button>
+              <span
+                role="tooltip"
+                className="pointer-events-none absolute left-1/2 top-full z-10 mt-1 hidden w-64 -translate-x-1/2 rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-xs font-normal text-slate-200 shadow-lg group-focus-within:block group-hover:block"
+              >
+                {relatedHelp(q)}
+              </span>
+            </span>
           </summary>
           <ul className="mt-3 space-y-2">
             {result.related.map(({ phoneme, grapheme }) => (
