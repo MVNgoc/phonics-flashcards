@@ -2,15 +2,20 @@ interface Props {
   percent: number
   learned: number
   total: number
+  /** Mặc định là tiến độ chiều xuôi; chiều ngược đặt nhãn và đơn vị riêng. */
+  label?: string
+  unit?: string
 }
 
-export function ProgressBar({ percent, learned, total }: Props) {
+export function ProgressBar({ percent, learned, total, label = 'Đã thuộc', unit = 'trường hợp' }: Props) {
   return (
     <div>
       <div className="mb-1 flex items-baseline justify-between text-sm">
-        <span className="font-medium">Đã thuộc {percent}%</span>
-        <span className="text-slate-500 dark:text-slate-400">
-          {learned}/{total} trường hợp
+        <span className="font-semibold uppercase tracking-wider">
+          {label} {percent}%
+        </span>
+        <span className="font-mono text-slate-500 dark:text-slate-400">
+          {learned}/{total} {unit}
         </span>
       </div>
       <div
@@ -21,7 +26,7 @@ export function ProgressBar({ percent, learned, total }: Props) {
         aria-valuemax={100}
       >
         <div
-          className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+          className="cp-progress h-full rounded-full transition-all duration-500"
           style={{ width: `${percent}%` }}
         />
       </div>

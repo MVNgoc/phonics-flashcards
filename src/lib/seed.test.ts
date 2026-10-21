@@ -1,13 +1,23 @@
 import { describe, it, expect } from 'vitest'
-import { seedData } from './seed'
+import { builtinSeedData, seedData } from './seed'
 import { normalize } from './sm2'
 
-const { phonemes } = seedData()
-
-describe('seed data', () => {
+describe('bộ âm soạn sẵn', () => {
   it('có đủ nguyên âm và phụ âm', () => {
+    const { phonemes } = builtinSeedData()
     expect(phonemes.filter((p) => p.type === 'vowel')).toHaveLength(21)
     expect(phonemes.filter((p) => p.type === 'consonant')).toHaveLength(11)
+  })
+})
+
+/** Data mặc định lấy từ file backup nếu có, không thì chính là bộ soạn sẵn. */
+describe.each([
+  ['bộ âm soạn sẵn', builtinSeedData()],
+  ['data mặc định', seedData()],
+])('%s', (_, { phonemes }) => {
+  it('có cả nguyên âm và phụ âm', () => {
+    expect(phonemes.some((p) => p.type === 'vowel')).toBe(true)
+    expect(phonemes.some((p) => p.type === 'consonant')).toBe(true)
   })
 
   it('mọi âm đều có nhãn — nhãn là đề bài khi học', () => {

@@ -306,14 +306,17 @@ và **top 5 trường hợp sai nhiều nhất** vẽ bằng div (không dùng t
   key cũ được xoá luôn lúc load. Chỉ làm khi bộ âm thay đổi tận gốc.
 - Mang sang máy khác: Export ở máy A → Import ở máy B.
 
-## Dark mode
+## Giao diện
 
-Toggle 🌙/☀️ ở header, lưu ở localStorage key `phonics-flashcard:theme`. Lần đầu
-theo `prefers-color-scheme` của hệ thống.
+Phong cách Cyberpunk, chỉ có nền tối: class `dark` luôn bật sẵn trên `<html>`.
+Bảng màu nằm ở `tailwind.config.ts`: năm dải `slate` / `sky` / `emerald` / `rose` /
+`amber` được định nghĩa lại thành màu neon nhưng giữ tên, nên component không phải
+đổi class. Khung HUD, nút, chữ neon và hiệu ứng (glitch khi sang thẻ, rung khi gõ
+sai, thanh tiến độ sọc) ở `src/index.css`. Hiệu ứng tự tắt khi hệ thống bật
+`prefers-reduced-motion`.
 
-Không bị flash vì class `dark` được set bằng một `<script>` inline trong
-`index.html`, **trước khi React mount**; `useDarkMode` đọc lại class đó làm state
-ban đầu thay vì tự đoán.
+Font Chakra Petch (chữ thường) và JetBrains Mono (ô gõ) lấy từ Google Fonts, đều có
+tiếng Việt; mất mạng thì rơi về font hệ thống.
 
 ## Deploy Netlify
 

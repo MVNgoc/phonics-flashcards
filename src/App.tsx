@@ -1,12 +1,13 @@
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom'
-import { ThemeToggle } from './components/ThemeToggle'
 import { StoreProvider } from './hooks/useStore'
 import { StudyPage } from './pages/StudyPage'
+import { LookupPage } from './pages/LookupPage'
 import { ManagePage } from './pages/ManagePage'
 import { StatsPage } from './pages/StatsPage'
 
 const NAV = [
   { to: '/study', label: 'Học' },
+  { to: '/lookup', label: 'Tra cứu' },
   { to: '/manage', label: 'Quản lý' },
   { to: '/stats', label: 'Thống kê' },
 ]
@@ -14,20 +15,23 @@ const NAV = [
 export default function App() {
   return (
     <StoreProvider>
-      <div className="min-h-screen bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100">
-        <header className="border-b border-slate-200 dark:border-slate-700">
-          <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 p-4">
-            <span className="font-bold">Phonics</span>
+      <div className="min-h-screen">
+        <header className="border-b border-sky-500/30 bg-slate-950/60 shadow-[0_1px_16px_rgb(0_240_255/0.15)] backdrop-blur-sm">
+          <div className="mx-auto flex max-w-3xl items-center justify-between gap-2 p-4 sm:gap-4">
+            <span className="cp-neon hidden font-bold uppercase tracking-[0.2em] sm:inline">
+              Phonics<span className="text-rose-500">//</span>
+              <span className="cp-cursor text-sky-500">▮</span>
+            </span>
             <nav className="flex gap-1">
               {NAV.map((n) => (
                 <NavLink
                   key={n.to}
                   to={n.to}
                   className={({ isActive }) =>
-                    `rounded-lg px-3 py-1.5 text-sm font-medium ${
+                    `whitespace-nowrap border-b-2 px-2.5 py-1.5 text-sm font-semibold uppercase tracking-wider transition sm:px-3 ${
                       isActive
-                        ? 'bg-slate-100 dark:bg-slate-800'
-                        : 'text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800'
+                        ? 'cp-neon border-sky-500 bg-sky-500/10'
+                        : 'border-transparent text-slate-400 hover:border-rose-500/60 hover:text-rose-400'
                     }`
                   }
                 >
@@ -35,7 +39,6 @@ export default function App() {
                 </NavLink>
               ))}
             </nav>
-            <ThemeToggle />
           </div>
         </header>
 
@@ -43,6 +46,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Navigate to="/study" replace />} />
             <Route path="/study" element={<StudyPage />} />
+            <Route path="/lookup" element={<LookupPage />} />
             <Route path="/manage" element={<ManagePage />} />
             <Route path="/stats" element={<StatsPage />} />
             <Route path="*" element={<Navigate to="/study" replace />} />

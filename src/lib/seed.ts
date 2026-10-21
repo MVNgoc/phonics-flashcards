@@ -1,4 +1,4 @@
-import type { AppData, Phoneme, PhonemeType } from './types'
+import type { AppData, Phoneme, PhonemeType, StoredState } from './types'
 import { newReviewState } from './sm2'
 
 type SeedSpec = [label: string, type: PhonemeType, graphemes: [string, string[]][]]
@@ -377,7 +377,19 @@ const SEED: SeedSpec[] = [
   ],
 ]
 
-export function seedData(): AppData {
+/**
+ * Data mặc định lấy từ file backup người dùng để ở gốc repo. File này bị gitignore,
+ * nên khi không có (vd build trên Netlify từ git) thì rơi về SEED soạn sẵn ở trên.
+ */
+const BACKUP = Object.values(
+  import.meta.glob<StoredState | AppData>('/phonics-backup-2026-10-21.json', {
+    eager: true,
+    import: 'default',
+  }),
+)[0]
+
+/** Bộ âm soạn sẵn trong code, dùng khi không có file backup. */
+export function builtinSeedData(): AppData {
   const phonemes: Phoneme[] = SEED.map(([note, type, graphemes], i) => ({
     id: `seed-p${i}`,
     type,
@@ -390,4 +402,19 @@ export function seedData(): AppData {
     })),
   }))
   return { phonemes }
+}
+
+/** Data nạp khi localStorage trống hoặc khi bấm "Nạp lại data mẫu". Tiến độ ôn luôn bắt đầu lại. */
+export function seedData(): AppData {
+  if (!BACKUP) return builtinSeedData()
+  const data = 'data' in BACKUP ? BACKUP.data : BACKUP
+  return {
+    phonemes: data.phonemes.map((p) => ({
+      ...p,
+      graphemes: p.graphemes.map(({ reverseReview, ...g }) => {
+        void reverseReview
+        return { ...g, examples: [...g.examples], review: newReviewState() }
+      }),
+    })),
+  }
 }

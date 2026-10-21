@@ -5,7 +5,7 @@ import { isLearned } from '../lib/sm2'
 
 const btn = 'rounded-lg px-3 py-1.5 text-sm font-medium'
 const input =
-  'rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-900'
+  'rounded-lg border border-slate-600 bg-slate-950/80 px-3 py-1.5 text-sm focus:border-sky-500 focus:outline-none'
 
 function AddPhonemeForm() {
   const { addPhoneme } = useStore()
@@ -34,7 +34,7 @@ function AddPhonemeForm() {
         placeholder="Âm, vd: /æ/"
         className={`${input} flex-1 min-w-40`}
       />
-      <button type="submit" className={`${btn} bg-sky-600 text-white hover:bg-sky-500`}>
+      <button type="submit" className={`${btn} cp-btn`}>
         Thêm âm
       </button>
     </form>
@@ -141,7 +141,7 @@ function PhonemeCard({ phoneme }: { phoneme: Phoneme }) {
   }
 
   return (
-    <article className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+    <article className="cp-panel p-4">
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <select
           value={phoneme.type}
@@ -163,7 +163,7 @@ function PhonemeCard({ phoneme }: { phoneme: Phoneme }) {
             <button
               type="button"
               onClick={() => deletePhoneme(phoneme.id)}
-              className={`${btn} bg-rose-600 text-white`}
+              className={`${btn} cp-btn-danger`}
             >
               Xoá
             </button>
@@ -221,7 +221,7 @@ export function PhonemeManager() {
             onClick={() => setFilter(f)}
             className={`${btn} border ${
               filter === f
-                ? 'border-sky-600 bg-sky-600 text-white'
+                ? 'cp-btn border-sky-500'
                 : 'border-slate-300 dark:border-slate-600'
             }`}
           >

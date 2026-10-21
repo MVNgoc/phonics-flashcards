@@ -4,6 +4,7 @@ import type { AppData, Grapheme, Phoneme, PhonemeType } from '../lib/types'
 import { loadData, saveData, uid } from '../lib/storage'
 import { newReviewState, review, type Grade } from '../lib/sm2'
 import { seedData } from '../lib/seed'
+import { reviewOf, type Direction } from '../lib/deck'
 
 export interface ParsedPhoneme {
   note: string
@@ -23,7 +24,13 @@ interface Store {
     patch: Partial<Pick<Grapheme, 'spelling' | 'examples'>>,
   ) => void
   deleteGrapheme: (phonemeId: string, graphemeId: string) => void
-  gradeCard: (phonemeId: string, graphemeId: string, grade: Grade, today: string) => void
+  gradeCard: (
+    phonemeId: string,
+    graphemeId: string,
+    grade: Grade,
+    today: string,
+    direction?: Direction,
+  ) => void
   mergeParsed: (parsed: ParsedPhoneme[]) => void
   replaceAll: (data: AppData) => void
   resetToSeed: () => void
@@ -86,12 +93,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   )
 
   const gradeCard = useCallback<Store['gradeCard']>(
-    (phonemeId, graphemeId, grade, today) =>
+    (phonemeId, graphemeId, grade, today, direction = 'forward') =>
       mapPhoneme(phonemeId, (p) => ({
         ...p,
-        graphemes: p.graphemes.map((g) =>
-          g.id === graphemeId ? { ...g, review: review(g.review, grade, today) } : g,
-        ),
+        graphemes: p.graphemes.map((g) => {
+          if (g.id !== graphemeId) return g
+          const next = review(reviewOf(g, direction), grade, today)
+          return direction === 'forward' ? { ...g, review: next } : { ...g, reverseReview: next }
+        }),
       })),
     [mapPhoneme],
   )

@@ -16,6 +16,8 @@ export interface Grapheme {
   spelling: string
   examples: string[]
   review: ReviewState
+  /** Tiến độ chiều ngược (cho cách viết, gõ âm). Chưa học chiều này thì không có. */
+  reverseReview?: ReviewState
 }
 
 /**

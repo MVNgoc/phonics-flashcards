@@ -195,12 +195,18 @@ export interface QueueOptions {
   skipDoneToday?: boolean
 }
 
+/** Một nhóm để xếp hàng ôn: id + lịch ôn của mọi đáp án trong nhóm. */
+export interface ReviewGroup {
+  id: string
+  reviews: ReviewState[]
+}
+
 /**
- * Study unit is a whole sound group: the group inherits the priority of its most
- * urgent grapheme, so we can reuse buildQueue and just dedupe by phoneme.
+ * Study unit is a whole group: the group inherits the priority of its most
+ * urgent card. Dùng chung cho cả hai chiều học (xem deck.ts).
  */
-export function buildGroupQueue(
-  phonemes: Phoneme[],
+export function buildReviewQueue(
+  groups: ReviewGroup[],
   today: string,
   rng: Rng = Math.random,
   { skipDoneToday = true }: QueueOptions = {},
@@ -208,11 +214,11 @@ export function buildGroupQueue(
   // (bucket, key) càng nhỏ càng gấp. bucket 0 = quá hạn, 1 = mới, 2 = sắp đến hạn.
   const ranked: { id: string; bucket: number; key: number }[] = []
 
-  for (const p of phonemes) {
+  for (const grp of groups) {
     let best: { bucket: number; key: number } | null = null
-    for (const g of p.graphemes) {
-      if (skipDoneToday && g.review.lastReviewed === today) continue
-      const due = g.review.nextDue
+    for (const r of grp.reviews) {
+      if (skipDoneToday && r.lastReviewed === today) continue
+      const due = r.nextDue
       let cur: { bucket: number; key: number } | null = null
       if (due === null) {
         cur = { bucket: 1, key: 0 }
@@ -225,13 +231,28 @@ export function buildGroupQueue(
         best = cur
       }
     }
-    if (best) ranked.push({ id: p.id, ...best })
+    if (best) ranked.push({ id: grp.id, ...best })
   }
 
   // Xáo trước, sort sau: cùng mức ưu tiên thì ngẫu nhiên, khác mức thì giữ đúng thứ tự.
   return shuffled(ranked, rng)
     .sort((a, b) => a.bucket - b.bucket || a.key - b.key)
     .map((x) => x.id)
+}
+
+/** Hàng đợi chiều xuôi: mỗi âm là một nhóm. */
+export function buildGroupQueue(
+  phonemes: Phoneme[],
+  today: string,
+  rng: Rng = Math.random,
+  options: QueueOptions = {},
+): string[] {
+  return buildReviewQueue(
+    phonemes.map((p) => ({ id: p.id, reviews: p.graphemes.map((g) => g.review) })),
+    today,
+    rng,
+    options,
+  )
 }
 
 // ---------- aggregate stats ----------

@@ -1,23 +1,54 @@
-import { useState } from 'react'
-import type { GraphemeOutcome, MatchResult, Phase } from '../hooks/useStudyQueue'
+import { useState, type ReactNode } from 'react'
+import type { ItemOutcome, MatchResult, Phase } from '../hooks/useStudyQueue'
+import type { DeckGroup, DeckItem, Direction } from '../lib/deck'
 import { GRADE_LABEL, type Grade } from '../lib/sm2'
-import type { Grapheme, Phoneme } from '../lib/types'
 
 interface Props {
-  group: Phoneme
+  direction: Direction
+  group: DeckGroup
   phase: Phase
-  pending: Grapheme | null
-  outcomes: GraphemeOutcome[]
+  pending: DeckItem | null
+  outcomes: ItemOutcome[]
   rejected: string[]
   foundCount: number
   allFound: boolean
   showCaseCount: boolean
-  onSubmitSpelling: (text: string) => MatchResult
+  onSubmitAnswer: (text: string) => MatchResult
   onSubmitExample: (text: string) => MatchResult
   onSkipExamples: () => void
-  onRevisitExamples: (graphemeId: string) => void
+  onRevisitExamples: (itemId: string) => void
   onFinish: () => void
   onCommit: () => void
+}
+
+/** Câu chữ khác nhau giữa hai chiều; còn lại hai chiều dùng chung một thẻ. */
+const COPY: Record<
+  Direction,
+  { unit: string; question: string; placeholder: string; examplePrompt: (item: DeckItem) => ReactNode }
+> = {
+  forward: {
+    unit: 'trường hợp',
+    question: 'Những trường hợp nào tạo nên âm này?',
+    placeholder: 'gõ trường hợp, Enter',
+    examplePrompt: (item) => (
+      <>
+        Đúng rồi. Cho <b>một</b> ví dụ dùng{' '}
+        <span className="font-bold text-slate-900 dark:text-slate-100">{item.spelling}</span>{' '}
+        đọc thành âm này:
+      </>
+    ),
+  },
+  reverse: {
+    unit: 'âm',
+    question: 'Cách viết này tạo ra những âm nào?',
+    placeholder: 'gõ âm, vd: ai hoặc /ai/, Enter',
+    examplePrompt: (item) => (
+      <>
+        Đúng rồi. Cho <b>một</b> ví dụ có cách viết này đọc thành{' '}
+        <span className="font-bold text-slate-900 dark:text-slate-100">{item.sound}</span>:
+      </>
+    ),
+  },
 }
 
 const chip = 'rounded-full px-3 py-1 text-sm font-medium'
@@ -68,60 +99,70 @@ function AnswerInput({
         autoCapitalize="off"
         autoComplete="off"
         spellCheck={false}
-        className={`w-full rounded-lg border bg-white px-3 py-2 text-center text-lg dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 ${
-          bad ? 'border-rose-500 text-rose-600' : 'border-slate-300 dark:border-slate-600'
+        className={`w-full rounded-lg border bg-slate-950/80 px-3 py-2 text-center text-lg focus:border-sky-500 focus:shadow-[0_0_14px_rgb(0_240_255/0.35)] focus:outline-none ${
+          bad ? 'cp-shake border-rose-500 text-rose-600' : 'border-slate-600'
         }`}
       />
     </form>
   )
 }
 
-function GroupHeader({ group, showCaseCount }: { group: Phoneme; showCaseCount: boolean }) {
+function GroupHeader({
+  direction,
+  group,
+  showCaseCount,
+}: {
+  direction: Direction
+  group: DeckGroup
+  showCaseCount: boolean
+}) {
   return (
     <div className="text-center">
-      <div className="text-5xl font-bold">{group.note || '(nhóm chưa có nhãn)'}</div>
+      <div key={group.id} className="cp-neon cp-glitch text-5xl font-bold md:text-6xl">
+        {group.prompt}
+      </div>
       <div className="mt-2 text-xs uppercase tracking-widest text-slate-400">
-        {group.type === 'vowel' ? 'nguyên âm' : 'phụ âm'}
-        {showCaseCount && ` · ${group.graphemes.length} trường hợp`}
+        {group.kind}
+        {showCaseCount && ` · ${group.items.length} ${COPY[direction].unit}`}
       </div>
     </div>
   )
 }
 
 /**
- * Những trường hợp đã gõ đúng, kèm ví dụ đã gõ được. Trường hợp còn nợ ví dụ có
- * nút để gõ bù bất cứ lúc nào.
+ * Những đáp án đã gõ đúng, kèm ví dụ đã gõ được. Đáp án còn nợ ví dụ có nút để
+ * gõ bù bất cứ lúc nào.
  */
 function FoundList({
   outcomes,
   activeId,
   onRevisitExamples,
 }: {
-  outcomes: GraphemeOutcome[]
+  outcomes: ItemOutcome[]
   activeId: string | null
-  onRevisitExamples: (graphemeId: string) => void
+  onRevisitExamples: (itemId: string) => void
 }) {
-  const done = outcomes.filter((o) => o.spellingFound)
+  const done = outcomes.filter((o) => o.found)
   if (done.length === 0) return null
 
   return (
     <ul className="space-y-1.5">
       {done.map((o) => (
-        <li key={o.grapheme.id} className="flex flex-wrap items-center gap-2">
-          <span className={chipGreen}>✓ {o.grapheme.spelling}</span>
+        <li key={o.item.id} className="flex flex-wrap items-center gap-2">
+          <span className={chipGreen}>✓ {o.item.answer}</span>
           {o.examplesFound.map((ex) => (
             <span key={ex} className="text-sm text-slate-500 dark:text-slate-400">
               {ex}
             </span>
           ))}
-          {o.grapheme.examples.length > 0 &&
+          {o.item.examples.length > 0 &&
             o.examplesFound.length === 0 &&
-            (o.grapheme.id === activeId ? (
+            (o.item.id === activeId ? (
               <span className="text-sm text-sky-600 dark:text-sky-400">← đang gõ ví dụ</span>
             ) : (
               <button
                 type="button"
-                onClick={() => onRevisitExamples(o.grapheme.id)}
+                onClick={() => onRevisitExamples(o.item.id)}
                 className="rounded-full border border-dashed border-slate-300 px-3 py-1 text-sm text-slate-500 hover:border-sky-500 hover:text-sky-600 dark:border-slate-600 dark:text-slate-400"
               >
                 + ví dụ
@@ -134,6 +175,7 @@ function FoundList({
 }
 
 function AnswerPhase({
+  direction,
   group,
   pending,
   outcomes,
@@ -141,34 +183,29 @@ function AnswerPhase({
   foundCount,
   allFound,
   showCaseCount,
-  onSubmitSpelling,
+  onSubmitAnswer,
   onSubmitExample,
   onSkipExamples,
   onRevisitExamples,
   onFinish,
 }: Omit<Props, 'phase' | 'onCommit'>) {
-  const typedExamples = pending ? (outcomes.find((o) => o.grapheme.id === pending.id)?.examplesFound ?? []) : []
+  const copy = COPY[direction]
+  const typedExamples = pending ? (outcomes.find((o) => o.item.id === pending.id)?.examplesFound ?? []) : []
   const missingExamples = pending ? pending.examples.length - typedExamples.length : 0
   const owing = outcomes.filter(
-    (o) => o.spellingFound && o.grapheme.examples.length > 0 && o.examplesFound.length === 0,
+    (o) => o.found && o.item.examples.length > 0 && o.examplesFound.length === 0,
   ).length
 
   return (
     <>
-      <GroupHeader group={group} showCaseCount={showCaseCount} />
+      <GroupHeader direction={direction} group={group} showCaseCount={showCaseCount} />
 
       <p className="text-center text-sm text-slate-500 dark:text-slate-400">
-        {pending ? (
-          <>
-            Đúng rồi. Cho <b>một</b> ví dụ dùng{' '}
-            <span className="font-bold text-slate-900 dark:text-slate-100">{pending.spelling}</span>{' '}
-            đọc thành âm này:
-          </>
-        ) : allFound ? (
-          'Đủ trường hợp rồi — gõ bù ví dụ còn thiếu hoặc xem đáp án.'
-        ) : (
-          'Những trường hợp nào tạo nên âm này?'
-        )}
+        {pending
+          ? copy.examplePrompt(pending)
+          : allFound
+            ? `Đủ ${copy.unit} rồi — gõ bù ví dụ còn thiếu hoặc xem đáp án.`
+            : copy.question}
       </p>
 
       <FoundList
@@ -192,15 +229,17 @@ function AnswerPhase({
 
       <div className="flex flex-col items-center gap-3">
         <AnswerInput
-          key={pending ? `ex-${pending.id}-${typedExamples.length}` : 'spelling'}
+          key={pending ? `ex-${pending.id}-${typedExamples.length}` : 'answer'}
           placeholder={
             pending
-              ? `ví dụ cho "${pending.spelling}"`
+              ? direction === 'forward'
+                ? `ví dụ cho "${pending.spelling}"`
+                : `ví dụ "${pending.spelling}" = ${pending.sound}`
               : allFound
                 ? 'Enter để xem đáp án'
-                : 'gõ trường hợp, Enter'
+                : copy.placeholder
           }
-          onSubmit={pending ? onSubmitExample : onSubmitSpelling}
+          onSubmit={pending ? onSubmitExample : onSubmitAnswer}
           onEmpty={pending ? onSkipExamples : onFinish}
         />
 
@@ -219,13 +258,13 @@ function AnswerPhase({
           <div className="flex flex-wrap items-center justify-center gap-3 text-sm text-slate-500 dark:text-slate-400">
             <span>
               đã đúng {foundCount}
-              {showCaseCount && `/${group.graphemes.length}`}
+              {showCaseCount && `/${group.items.length}`}
               {owing > 0 && ` · nợ ${owing} ví dụ`}
             </span>
             <button
               type="button"
               onClick={onFinish}
-              className="rounded-lg bg-sky-600 px-3 py-1.5 font-medium text-white hover:bg-sky-500"
+              className="cp-btn rounded-lg px-3 py-1.5"
             >
               Hết rồi, xem đáp án →
             </button>
@@ -237,42 +276,44 @@ function AnswerPhase({
 }
 
 function SummaryPhase({
+  direction,
   group,
   outcomes,
   onCommit,
-}: Pick<Props, 'group' | 'outcomes' | 'onCommit'>) {
-  const missed = outcomes.filter((o) => !o.spellingFound)
+}: Pick<Props, 'direction' | 'group' | 'outcomes' | 'onCommit'>) {
+  const missed = outcomes.filter((o) => !o.found)
+  const { unit } = COPY[direction]
 
   return (
     <>
-      {/* Đã tới lúc xem đáp án nên luôn hiện số trường hợp. */}
-      <GroupHeader group={group} showCaseCount />
+      {/* Đã tới lúc xem đáp án nên luôn hiện số đáp án. */}
+      <GroupHeader direction={direction} group={group} showCaseCount />
       <p className="text-center text-sm text-slate-500 dark:text-slate-400">
         {missed.length === 0
-          ? 'Đúng hết trường hợp.'
-          : `Thiếu ${missed.length}/${group.graphemes.length} trường hợp.`}
+          ? `Đúng hết ${unit}.`
+          : `Thiếu ${missed.length}/${group.items.length} ${unit}.`}
       </p>
 
       <ul className="space-y-2">
         {outcomes.map((o) => (
           <li
-            key={o.grapheme.id}
+            key={o.item.id}
             className="rounded-lg border border-slate-200 p-3 dark:border-slate-700"
           >
             <div className="flex flex-wrap items-center gap-2">
-              <span className={o.spellingFound ? 'text-emerald-600' : 'text-rose-600'}>
-                {o.spellingFound ? '✓' : '✗'}
+              <span className={o.found ? 'text-emerald-600' : 'text-rose-600'}>
+                {o.found ? '✓' : '✗'}
               </span>
-              <span className="text-lg font-bold">{o.grapheme.spelling}</span>
+              <span className="text-lg font-bold">{o.item.answer}</span>
               <span className={`${chip} ${GRADE_CHIP[o.grade]}`}>{GRADE_LABEL[o.grade]}</span>
-              {o.grapheme.examples.length === 0 && (
+              {o.item.examples.length === 0 && (
                 <span className="text-xs text-slate-400">chưa có ví dụ</span>
               )}
             </div>
 
-            {o.grapheme.examples.length > 0 && (
+            {o.item.examples.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-2">
-                {o.grapheme.examples.map((ex) => (
+                {o.item.examples.map((ex) => (
                   <span
                     key={ex}
                     className={o.examplesFound.includes(ex) ? chipGreen : chipGrey}
@@ -290,7 +331,7 @@ function SummaryPhase({
       <button
         type="button"
         onClick={onCommit}
-        className="w-full rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sky-500"
+        className="cp-btn w-full rounded-lg px-4 py-2.5 text-sm"
       >
         Chấm & thẻ tiếp
       </button>
@@ -300,11 +341,16 @@ function SummaryPhase({
 
 export function TypingCard(props: Props) {
   return (
-    <div className="space-y-4 rounded-2xl border border-slate-200 p-5 shadow-sm dark:border-slate-700">
+    <div className="cp-panel space-y-4 p-5 md:p-8">
       {props.phase === 'answer' ? (
         <AnswerPhase {...props} />
       ) : (
-        <SummaryPhase group={props.group} outcomes={props.outcomes} onCommit={props.onCommit} />
+        <SummaryPhase
+          direction={props.direction}
+          group={props.group}
+          outcomes={props.outcomes}
+          onCommit={props.onCommit}
+        />
       )}
     </div>
   )

@@ -1,6 +1,13 @@
 import { useCallback, useMemo, useState } from 'react'
-import { buildGroupQueue, gradeFromTyping, normalize, todayISO, type Grade } from '../lib/sm2'
-import type { Grapheme, Phoneme } from '../lib/types'
+import { gradeFromTyping, normalize, todayISO, type Grade } from '../lib/sm2'
+import {
+  buildDeck,
+  buildDeckQueue,
+  matchAnswer,
+  type DeckGroup,
+  type DeckItem,
+  type Direction,
+} from '../lib/deck'
 import { useStore } from './useStore'
 
 /** 'answer' = đang gõ trường hợp / ví dụ, 'summary' = xem đáp án rồi chấm. */
@@ -8,58 +15,62 @@ export type Phase = 'answer' | 'summary'
 
 export type MatchResult = 'hit' | 'dup' | 'miss'
 
-export interface GraphemeOutcome {
-  grapheme: Grapheme
-  spellingFound: boolean
+export interface ItemOutcome {
+  item: DeckItem
+  /** Đã gõ đúng đáp án (cách viết ở chiều xuôi, âm ở chiều ngược). */
+  found: boolean
   examplesFound: string[]
   grade: Grade
 }
 
-/** Trường hợp đã gõ đúng nhưng chưa gõ được ví dụ nào — còn nợ ví dụ. */
-function needsExample(g: Grapheme, examplesFound: Record<string, string[]>): boolean {
-  return g.examples.length > 0 && (examplesFound[g.id] ?? []).length === 0
+/** Đáp án đã gõ đúng nhưng chưa gõ được ví dụ nào — còn nợ ví dụ. */
+function needsExample(item: DeckItem, examplesFound: Record<string, string[]>): boolean {
+  return item.examples.length > 0 && (examplesFound[item.id] ?? []).length === 0
 }
 
 /** Chỉ xong khi đủ trường hợp *và* không còn trường hợp nào nợ ví dụ. */
 function isGroupDone(
-  group: Phoneme,
+  group: DeckGroup,
   found: string[],
   examplesFound: Record<string, string[]>,
 ): boolean {
   return (
-    found.length === group.graphemes.length &&
-    group.graphemes.every((g) => !needsExample(g, examplesFound))
+    found.length === group.items.length &&
+    group.items.every((i) => !needsExample(i, examplesFound))
   )
 }
 
 /**
- * Một phiên học. Đơn vị là một âm và luồng gõ xen kẽ:
- * gõ đúng một trường hợp -> hỏi ngay ví dụ cho đúng trường hợp đó -> quay lại gõ
- * trường hợp tiếp. Gõ sai thì không hỏi ví dụ. Bỏ qua ví dụ thì trường hợp đó
- * vẫn còn nợ, quay lại gõ ví dụ lúc nào cũng được cho tới khi xem đáp án.
- * Điểm suy ra từ những gì đã gõ.
+ * Một phiên học. Đơn vị là một thẻ (một âm ở chiều xuôi, một cách viết ở chiều
+ * ngược) và luồng gõ xen kẽ: gõ đúng một đáp án -> hỏi ngay ví dụ cho đúng đáp
+ * án đó -> quay lại gõ đáp án tiếp. Gõ sai thì không hỏi ví dụ. Bỏ qua ví dụ
+ * thì đáp án đó vẫn còn nợ, quay lại gõ ví dụ lúc nào cũng được cho tới khi xem
+ * đáp án. Điểm suy ra từ những gì đã gõ.
+ *
+ * Đổi chiều học thì mount lại hook (StudyPage đặt `key`), không đổi giữa chừng.
  */
-export function useStudyQueue() {
+export function useStudyQueue(direction: Direction = 'forward') {
   const { data, gradeCard } = useStore()
   const today = useMemo(() => todayISO(), [])
+  const deck = useMemo(() => buildDeck(data.phonemes, direction), [data.phonemes, direction])
 
-  const [queue, setQueue] = useState<string[]>(() => buildGroupQueue(data.phonemes, today))
+  const [queue, setQueue] = useState<string[]>(() => buildDeckQueue(deck, today))
   const [phase, setPhase] = useState<Phase>('answer')
-  /** Trường hợp đang được hỏi ví dụ; null = đang hỏi trường hợp. */
+  /** Đáp án đang được hỏi ví dụ; null = đang hỏi đáp án. */
   const [pendingId, setPendingId] = useState<string | null>(null)
   const [found, setFound] = useState<string[]>([])
   const [rejected, setRejected] = useState<string[]>([])
   const [examplesFound, setExamplesFound] = useState<Record<string, string[]>>({})
   const [reviewed, setReviewed] = useState(0)
 
-  const group: Phoneme | null = data.phonemes.find((p) => p.id === queue[0]) ?? null
-  const pending = pendingId ? (group?.graphemes.find((g) => g.id === pendingId) ?? null) : null
+  const group: DeckGroup | null = deck.find((g) => g.id === queue[0]) ?? null
+  const pending = pendingId ? (group?.items.find((i) => i.id === pendingId) ?? null) : null
 
-  const submitSpelling = useCallback(
+  const submitAnswer = useCallback(
     (text: string): MatchResult => {
       const n = normalize(text)
       if (!group || !n) return 'miss'
-      const hit = group.graphemes.find((g) => normalize(g.spelling) === n)
+      const hit = matchAnswer(group, text, direction)
       if (!hit) {
         setRejected((r) => (r.includes(n) ? r : [...r, n]))
         return 'miss'
@@ -69,14 +80,14 @@ export function useStudyQueue() {
       const nextFound = [...found, hit.id]
       setFound(nextFound)
       if (hit.examples.length > 0) {
-        // Đúng -> hỏi ví dụ cho chính trường hợp này.
+        // Đúng -> hỏi ví dụ cho chính đáp án này.
         setPendingId(hit.id)
       } else if (isGroupDone(group, nextFound, examplesFound)) {
         setPhase('summary')
       }
       return 'hit'
     },
-    [group, found, examplesFound],
+    [group, found, examplesFound, direction],
   )
 
   const submitExample = useCallback(
@@ -100,7 +111,7 @@ export function useStudyQueue() {
   )
 
   /**
-   * Chưa nghĩ ra ví dụ: quay lại gõ trường hợp, trường hợp này vẫn nằm trong
+   * Chưa nghĩ ra ví dụ: quay lại gõ đáp án, đáp án này vẫn nằm trong
    * danh sách nợ ví dụ để gõ bù sau.
    */
   const skipExamples = useCallback(() => {
@@ -109,13 +120,13 @@ export function useStudyQueue() {
     if (isGroupDone(group, found, examplesFound)) setPhase('summary')
   }, [group, found, examplesFound])
 
-  /** Gõ bù ví dụ cho một trường hợp đã đúng trước đó. */
+  /** Gõ bù ví dụ cho một đáp án đã đúng trước đó. */
   const revisitExamples = useCallback(
-    (graphemeId: string) => {
-      if (!group || !found.includes(graphemeId)) return
-      const g = group.graphemes.find((x) => x.id === graphemeId)
-      if (!g || g.examples.length === 0) return
-      setPendingId(graphemeId)
+    (itemId: string) => {
+      if (!group || !found.includes(itemId)) return
+      const item = group.items.find((x) => x.id === itemId)
+      if (!item || item.examples.length === 0) return
+      setPendingId(itemId)
     },
     [group, found],
   )
@@ -126,19 +137,19 @@ export function useStudyQueue() {
     setPhase('summary')
   }, [])
 
-  /** Kết quả từng trường hợp, cập nhật ngay theo những gì đã gõ. */
-  const outcomes: GraphemeOutcome[] = useMemo(() => {
+  /** Kết quả từng đáp án, cập nhật ngay theo những gì đã gõ. */
+  const outcomes: ItemOutcome[] = useMemo(() => {
     if (!group) return []
-    return group.graphemes.map((g) => {
-      const spellingFound = found.includes(g.id)
-      const hits = examplesFound[g.id] ?? []
+    return group.items.map((item) => {
+      const isFound = found.includes(item.id)
+      const hits = examplesFound[item.id] ?? []
       return {
-        grapheme: g,
-        spellingFound,
+        item,
+        found: isFound,
         examplesFound: hits,
         grade: gradeFromTyping({
-          spellingFound,
-          hasExamples: g.examples.length > 0,
+          spellingFound: isFound,
+          hasExamples: item.examples.length > 0,
           examplesFound: hits.length,
         }),
       }
@@ -155,12 +166,14 @@ export function useStudyQueue() {
 
   const commit = useCallback(() => {
     if (!group) return
-    for (const o of outcomes) gradeCard(group.id, o.grapheme.id, o.grade, today)
+    for (const o of outcomes) {
+      for (const ref of o.item.refs) gradeCard(ref.phonemeId, ref.graphemeId, o.grade, today, direction)
+    }
     const needsRepeat = outcomes.some((o) => o.grade < 4)
     setQueue((q) => (needsRepeat ? [...q.slice(1), q[0]] : q.slice(1)))
     setReviewed((n) => n + 1)
     reset()
-  }, [group, outcomes, gradeCard, today, reset])
+  }, [group, outcomes, gradeCard, today, direction, reset])
 
   /**
    * Luyện lại khi hôm nay đã hết thẻ: hỏi cả những nhóm đã chấm trong ngày. Ôn
@@ -168,10 +181,10 @@ export function useStudyQueue() {
    * vào tiến độ.
    */
   const restart = useCallback(() => {
-    setQueue(buildGroupQueue(data.phonemes, today, Math.random, { skipDoneToday: false }))
+    setQueue(buildDeckQueue(deck, today, Math.random, { skipDoneToday: false }))
     setReviewed(0)
     reset()
-  }, [data.phonemes, today, reset])
+  }, [deck, today, reset])
 
   return {
     group,
@@ -180,10 +193,10 @@ export function useStudyQueue() {
     outcomes,
     rejected,
     foundCount: found.length,
-    allFound: group ? found.length === group.graphemes.length : false,
+    allFound: group ? found.length === group.items.length : false,
     remaining: queue.length,
     reviewed,
-    submitSpelling,
+    submitAnswer,
     submitExample,
     skipExamples,
     revisitExamples,
