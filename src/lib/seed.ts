@@ -77,7 +77,7 @@ const SEED: SeedSpec[] = [
     'vowel',
     [
       ['ee', ['meet', 'seed', 'see', 'tree', 'bee', 'sweet']],
-      ['ea', ['meat', 'cheat', 'mean', 'cheap', 'tee', 'beach']],
+      ['ea', ['meat', 'cheat', 'mean', 'cheap', 'tea', 'beach']],
       ['e', ['email', 'eBay', 'he', 'she', 'we', 'me']],
       ['ei', ['ceiling', 'seize', 'receipt', 'receive', 'neither', 'either']],
       ['ey', ['money', 'key', 'honey', 'monkey', 'kidney', 'alley']],
