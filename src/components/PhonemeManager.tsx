@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { Grapheme, Phoneme, PhonemeType } from '../lib/types'
 import { useStore } from '../hooks/useStore'
 import { isLearned } from '../lib/sm2'
@@ -41,6 +41,66 @@ function AddPhonemeForm() {
   )
 }
 
+/** Một từ ví dụ: bấm vào chữ để sửa tại chỗ, Enter/bấm ra ngoài để lưu, Esc để huỷ. */
+function ExampleChip({
+  word,
+  onRename,
+  onRemove,
+}: {
+  word: string
+  onRename: (next: string) => void
+  onRemove: () => void
+}) {
+  const [draft, setDraft] = useState<string | null>(null)
+  const cancelled = useRef(false)
+
+  if (draft !== null) {
+    return (
+      <input
+        autoFocus
+        value={draft}
+        size={Math.max(draft.length, 4)}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') e.currentTarget.blur()
+          if (e.key === 'Escape') {
+            cancelled.current = true
+            e.currentTarget.blur()
+          }
+        }}
+        onBlur={() => {
+          if (!cancelled.current) onRename(draft.trim())
+          cancelled.current = false
+          setDraft(null)
+        }}
+        aria-label={`Sửa ví dụ ${word}`}
+        className={`${input} px-2.5 py-0.5`}
+      />
+    )
+  }
+
+  return (
+    <span className="flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-sm dark:bg-slate-700">
+      <button
+        type="button"
+        onClick={() => setDraft(word)}
+        title="Bấm để sửa"
+        className="hover:text-sky-400"
+      >
+        {word}
+      </button>
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label={`Xoá ví dụ ${word}`}
+        className="text-slate-400 hover:text-rose-500"
+      >
+        ×
+      </button>
+    </span>
+  )
+}
+
 function ExampleEditor({ phoneme, grapheme }: { phoneme: Phoneme; grapheme: Grapheme }) {
   const { updateGrapheme } = useStore()
   const [word, setWord] = useState('')
@@ -62,30 +122,30 @@ function ExampleEditor({ phoneme, grapheme }: { phoneme: Phoneme; grapheme: Grap
     })
   }
 
+  /** Thay tại chỗ để giữ thứ tự; bỏ qua nếu trống, không đổi hoặc trùng ví dụ khác. */
+  function rename(oldWord: string, next: string) {
+    if (!next || next === oldWord || grapheme.examples.includes(next)) return
+    updateGrapheme(phoneme.id, grapheme.id, {
+      examples: grapheme.examples.map((x) => (x === oldWord ? next : x)),
+    })
+  }
+
   return (
     <div className="flex flex-wrap items-center gap-2">
       {grapheme.examples.map((w) => (
-        <span
+        <ExampleChip
           key={w}
-          className="flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs dark:bg-slate-700"
-        >
-          {w}
-          <button
-            type="button"
-            onClick={() => remove(w)}
-            aria-label={`Xoá ví dụ ${w}`}
-            className="text-slate-400 hover:text-rose-500"
-          >
-            ×
-          </button>
-        </span>
+          word={w}
+          onRename={(next) => rename(w, next)}
+          onRemove={() => remove(w)}
+        />
       ))}
       <form onSubmit={add}>
         <input
           value={word}
           onChange={(e) => setWord(e.target.value)}
           placeholder="+ từ ví dụ"
-          className={`${input} w-32 py-1 text-xs`}
+          className={`${input} w-36 py-1`}
         />
       </form>
     </div>
