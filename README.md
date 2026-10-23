@@ -437,9 +437,10 @@ hợp lệ (`monopoly`: chữ o đọc ơ ghi `/o/` hay `/u/` đều được). 
 tự thêm lưu ở `extraAnswers` trong dữ liệu (đi theo Export / Import), bỏ được bằng
 nút `× bỏ`.
 
-Cuối trang có mục gập **N từ ví dụ chưa luyện được**: hoặc không có trong từ điển
-phát âm, hoặc bảng thiếu cách viết cho một âm trong từ (vd `music`: chữ `s` đọc /z/
-nhưng /z/ chưa có trường hợp `s`). Thêm trường hợp đó ở `/manage` là từ tự có đáp án.
+Từ ví dụ không luyện được thì lặng lẽ bị bỏ khỏi bộ luyện (không hiện trên trang):
+hoặc không có trong từ điển phát âm, hoặc bảng thiếu cách viết cho một âm trong từ
+(vd `music`: chữ `s` đọc /z/ nhưng /z/ chưa có trường hợp `s`). Thêm trường hợp đó ở
+`/manage` là từ tự có đáp án. Danh sách vẫn có trong `unresolved` của `alignItems`.
 
 ## Trang tra cứu
 

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useSettings } from '../hooks/useSettings'
 import { useSpeech } from '../hooks/useSpeech'
 import { useStore } from '../hooks/useStore'
@@ -189,32 +190,6 @@ export function DictationPage() {
           </button>
         </div>
       )}
-
-      {built.unresolved.length > 0 && (
-        <details className="text-sm text-slate-500 dark:text-slate-400">
-          <summary className="cursor-pointer">
-            {built.unresolved.length} từ ví dụ chưa luyện được
-          </summary>
-          <p className="mt-2">
-            <b>Chưa phân tích được</b> — bảng âm thiếu cách viết cho một âm trong từ (vd <i>music</i>: chữ{' '}
-            <i>s</i> đọc /z/ nhưng /z/ chưa có trường hợp <i>s</i>). Thêm trường hợp đó ở trang Quản lý là từ
-            tự có đáp án:
-          </p>
-          <p className="mt-1">
-            {built.unresolved
-              .filter((u) => u.reason === 'no-align')
-              .map((u) => u.word)
-              .join(', ') || '—'}
-          </p>
-          <p className="mt-2">
-            <b>Không có trong từ điển phát âm:</b>{' '}
-            {built.unresolved
-              .filter((u) => u.reason === 'no-pron')
-              .map((u) => u.word)
-              .join(', ') || '—'}
-          </p>
-        </details>
-      )}
     </div>
   )
 }
@@ -234,9 +209,27 @@ function StartPanel({
       <div>
         <p className="text-lg font-medium">{count} từ, trộn đều dễ – vừa – khó</p>
         {fromTable !== null && (
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            {fromTable} từ ví dụ trong bảng âm + {count - fromTable} từ thêm từ từ điển (2 âm tiết trở lên)
-          </p>
+          <ul className="mx-auto mt-1 max-w-md space-y-0.5 text-left text-sm text-slate-500 dark:text-slate-400">
+            <li>
+              · <b>{fromTable}</b> từ ví dụ trong bộ âm của bạn ở trang{' '}
+              <Link to="/manage" className="underline hover:text-sky-400">
+                Quản lý
+              </Link>{' '}
+              (các từ ví dụ của mọi âm, mọi trường hợp)
+            </li>
+            <li>
+              · <b>{count - fromTable}</b> từ thêm từ từ điển phát âm Anh-Anh{' '}
+              <a
+                href="https://github.com/JoseLlarena/Britfone"
+                target="_blank"
+                rel="noreferrer"
+                className="underline hover:text-sky-400"
+              >
+                Britfone
+              </a>{' '}
+              — từ 2 âm tiết trở lên, chính tả Anh-Anh, phân tích được bằng bộ âm của bạn
+            </li>
+          </ul>
         )}
       </div>
       <div className="mx-auto max-w-md space-y-1 text-left text-sm text-slate-500 dark:text-slate-400">
