@@ -4,3 +4,4 @@ dist
 *.local
 .netlify
 phonics-backup-*.json
+scripts/.cache

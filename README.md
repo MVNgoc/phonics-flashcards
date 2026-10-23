@@ -14,6 +14,7 @@ không backend, không login, không đồng bộ.
 - [Thuật toán SM-2 & lịch ôn](#thuật-toán-sm-2--lịch-ôn)
 - [Thứ tự thẻ trong phiên](#thứ-tự-thẻ-trong-phiên)
 - [Progress % và định nghĩa "thuộc"](#progress--và-định-nghĩa-thuộc)
+- [Trang Nghe — phân tích âm một từ](#trang-nghe--phân-tích-âm-một-từ)
 - [Trang tra cứu](#trang-tra-cứu)
 - [Trang quản lý & nhập nhanh](#trang-quản-lý--nhập-nhanh)
 - [Trang thống kê](#trang-thống-kê)
@@ -46,7 +47,8 @@ có data mới.
 
 ```bash
 npm run typecheck   # tsc --noEmit
-npm test            # unit test cho sm2, deck, lookup, storage, seed (102 test)
+npm test            # unit test cho sm2, deck, lookup, storage, seed, dictation, spellingTips (139 test)
+npm run build:pron  # sinh lại src/data/*.json cho trang Nghe (cần mạng, xem Trang Nghe)
 npm run test:watch  # vitest watch mode
 npm run build       # typecheck + build ra dist/
 npm run preview     # xem thử bản build
@@ -333,6 +335,112 @@ Chiều Chữ → Âm tính riêng, đơn vị là **cặp chữ – âm** (mộ
 
 Progress bar hiện ở đầu `/study` (theo chiều đang học) và ở `/stats` (cả hai chiều).
 
+## Trang Nghe — phân tích âm một từ
+
+`/dictation`. App học **tiếng Anh-Anh**: giọng đọc, phát âm làm đáp án và chính tả
+của từ luyện đều theo Anh-Anh. App đọc một từ (Web Speech API của trình duyệt, chỉ
+cho chọn giọng en-GB; máy không có giọng en-GB nào thì dùng tạm giọng tiếng Anh khác
+và hiện cảnh báo), bạn gõ **phân tích âm** + **chỗ nhấn** + **từ gốc**:
+
+```
+'/d/or/./t/ur/        hoặc        'd or . t ur        → daughter
+```
+
+- Âm cách nhau bằng `/` hoặc dấu cách, `.` ngăn âm tiết, `'` (hoặc `ˈ`) đặt trước
+  âm tiết được nhấn.
+- Âm có biến thể thì ghi rõ trong ngoặc: `oo (L)` / `oo (S)` (long / short oo),
+  `th (UV)` / `th (V)` (th vô thanh: *think* / hữu thanh: *this*), vd
+  `/th (UV)/i/ng/k/`. Có dấu cách trước ngoặc hay không, hoa thường đều được;
+  `long oo` / `short oo` cũng nhận. Gõ trơn `oo` hay `th` là sai — app phân biệt
+  được vì th vô thanh / hữu thanh lấy theo âm thật trong từ điển phát âm. Bảng biến
+  thể là `LABEL_TOKENS` / `SOUND_TOKENS` trong `dictation.ts`.
+- Gõ tới đâu, dưới ô nhập hiện xem trước các âm tiết; âm tiết nhấn viền xanh, nhãn
+  không có trong bảng bị gạch đỏ.
+- Enter ở ô phân tích = sang ô từ gốc (ô trống = nghe lại), Enter ở ô từ gốc = chấm,
+  Enter lần nữa = từ tiếp. Nút 🐢 đọc chậm.
+
+**Chấm riêng ba phần:** âm (đúng dãy âm, so khớp tuyệt đối từng nhãn), nhấn âm
+(nhấn vào âm tiết thứ mấy — từ một âm tiết thì không cần dấu), từ gốc (không phân
+biệt hoa thường). **Vị trí dấu chấm không chấm**: ranh giới âm tiết không có đáp án
+duy nhất (`audacity` chia `/d/a/s/./i/t/` hay `/d/a/./s/i/t/` đều có từ điển ghi).
+Bảng kết quả tô xanh / đỏ từng âm bạn gõ so với đáp án gần nhất, và hiện đáp án
+theo âm tiết với **cụm chữ tạo ra từng âm** bên dưới (`d·augh·t·er`).
+
+Đây là luyện tự do: không có lịch ôn, không ghi tiến độ.
+
+### Bộ từ & độ khó
+
+Bộ luyện (~7.700 từ với bảng mặc định) gồm:
+
+- mọi **từ ví dụ một chữ trong bảng âm** (~1.000 từ, đa số một âm tiết);
+- **từ thêm từ từ điển** (`src/data/practiceWords.json`, ~9.100 từ Britfone từ 2 âm
+  tiết trở lên, đã bỏ tên riêng và từ tục). Chỉ lấy từ cắt gọn được bằng bảng của
+  bạn, không phải đoán chữ câm — bảng thiếu cách viết nào thì từ chứa nó tự rơi ra.
+  Chính tả theo Anh-Anh: từ chỉ là cách viết Mỹ (*color, center, organize,
+  theater*) bị bỏ, giữ cách viết Anh (*colour, centre, organise, theatre*), theo
+  [VarCon](http://wordlist.aspell.net/varcon/) (SCOWL).
+
+Mỗi từ có điểm độ khó (`difficulty` trong `dictation.ts`): số âm tiết, số âm, số âm
+ơ (phải đoán chữ), số cách viết không cơ bản (cách viết không đứng đầu trong âm của
+nó, vd `augh` của /or/), có chữ câm. Mỗi phiên chia bộ từ thành ba phần bằng nhau
+theo điểm (dễ / vừa / khó), xáo từng phần rồi lấy xen kẽ — **cứ ba từ liên tiếp có
+đủ một dễ, một vừa, một khó** (`mixedQueue`). Không có nút chọn mức.
+
+### Mẹo chính tả
+
+Sau khi chấm, nếu đuôi của từ khớp một mẹo thì hiện mẹo đó, cách từ này viết đuôi
+đó, và số liệu thật trong bộ luyện, vd:
+
+> /u/s/ (âm ơ + s) → -ous · từ này viết -ous — Tính từ gần như luôn -ous (famous,
+> nervous); danh từ thường -us (campus, virus). Trong bộ luyện: -ous 43 · -us 39
+
+Mẹo lấy theo **English Appendix 1: Spelling** của National Curriculum in England
+(Department for Education, 2013), ghi kèm lớp dạy (Year 1 – 6): -ous / -us, -cious /
+-tious, -tion / -ssion / -sion / -cian, -sion (/zh/), -ture, -sure, -cial / -tial,
+-able / -ible, -ant / -ent, -ance / -ence, -le / -el / -al / -il, -y (/ee/ và /igh/
+cuối từ), -dge / -ge, -tch, -ck, ff / ll / ss / zz, -ve. Danh sách nằm ở
+`SPELLING_TIPS` trong `src/lib/spellingTips.ts`; mẫu khớp theo cách gõ âm của bảng
+mặc định (`u`, `sh`, `ul`...), đổi tên nhãn thì mẹo liên quan không khớp nữa.
+
+Ô chọn đầu trang cho **luyện riêng một mẹo**: chỉ nghe các từ có đuôi đó (vẫn trộn
+đều độ khó), vd chọn *-ous* để luyện phân biệt -ous / -us.
+
+### Đáp án lấy từ đâu
+
+Không soạn tay. Đáp án suy ra từ **chính bảng âm của bạn** + phát âm giọng Anh:
+
+1. `src/data/pronunciations.json` — phát âm IPA có dấu nhấn: toàn bộ
+   [Britfone](https://github.com/JoseLlarena/Britfone) (MIT, ~15k từ, giọng Anh),
+   cộng với [CMU dict](https://github.com/cmusphinx/cmudict) (giọng Mỹ, đổi gần đúng
+   sang giọng Anh) cho những từ ví dụ trong seed mà Britfone không có. Sinh bằng
+   `npm run build:pron` (`scripts/build-pronunciations.ts`, cần mạng để tải Britfone,
+   CMU, VarCon và `/usr/share/dict/words` của macOS để lọc tên riêng); file chỉ tải khi mở trang
+   Nghe (~115KB gzip, cộng ~30KB cho danh sách từ luyện thêm).
+2. `alignWord` trong `src/lib/dictation.ts` cắt từ thành các cách viết **có trong
+   bảng** sao cho đọc ra đúng phát âm đó: `daughter` + `d ˈɔː t ə` → `d·augh·t·er`.
+   Nhãn âm ↔ âm IPA nối với nhau qua bảng `LABEL_SOUNDS` — **đổi tên nhãn ở
+   /manage thì phải đổi ở đó**.
+
+Hệ quả: sửa bảng ở `/manage` là đáp án đổi theo. Vài quy ước khi cắt:
+
+- **Âm ơ không nhấn** ghi theo âm ngắn của chữ viết: `about` → `/a/`, chữ `ci`
+  trong `audacity` → `/s/i/`. Chữ có r (`er`, `or`, `ar`...) đọc ơ → `/ur/` (`doctor`).
+- **r trước nguyên âm** (`story`): chấp nhận cả `/s/t/or/./i/` lẫn `/s/t/or/./r/i/`.
+- **Chữ ngoài bảng** (`l` trong `talk`) coi là chữ câm, gộp vào cụm trước; đáp án
+  đó hiện cảnh báo *máy đoán*.
+- Từ đã nằm trong ví dụ của trường hợp nào thì ưu tiên cách cắt dùng trường hợp đó
+  (`heart` → `ea` của `/a/`); từ điển đọc khác bảng (`because`) thì tin bảng.
+
+**Nhiều đáp án được chấp nhận**: từ có nhiều cách đọc, hoặc có nhiều cách cắt cùng
+hợp lệ (`monopoly`: chữ o đọc ơ ghi `/o/` hay `/u/` đều được). Phân tích của bạn khác
+đáp án mà bạn thấy đúng → bấm **Cách của tôi cũng đúng → thêm vào đáp án**. Đáp án
+tự thêm lưu ở `extraAnswers` trong dữ liệu (đi theo Export / Import), bỏ được bằng
+nút `× bỏ`.
+
+Cuối trang có mục gập **N từ ví dụ chưa luyện được**: hoặc không có trong từ điển
+phát âm, hoặc bảng thiếu cách viết cho một âm trong từ (vd `music`: chữ `s` đọc /z/
+nhưng /z/ chưa có trường hợp `s`). Thêm trường hợp đó ở `/manage` là từ tự có đáp án.
+
 ## Trang tra cứu
 
 `/lookup`, hai tab bấm qua lại:
@@ -465,7 +573,8 @@ src/
 ├── hooks/
 │   ├── useStore.ts         context + localStorage, mọi hành động sửa dữ liệu
 │   ├── useStudyQueue.ts    state machine của phiên học (answer/summary), tự chấm
-│   └── useSettings.ts      tuỳ chọn luyện tập (chiều học, ẩn số trường hợp)
+│   ├── useSpeech.ts        đọc từ bằng Web Speech API, chỉ giọng en-GB
+│   └── useSettings.ts      tuỳ chọn luyện tập (chiều học, ẩn số trường hợp, giọng đọc)
 ├── lib/
 │   ├── sm2.ts              date helper, review(), gradeFromTyping(), queue, stats
 │   ├── sm2.test.ts         44 test
@@ -473,12 +582,21 @@ src/
 │   ├── deck.test.ts        14 test
 │   ├── lookup.ts           tra cứu chữ ↔ âm, tô phần chữ trong ví dụ
 │   ├── lookup.test.ts      22 test
+│   ├── dictation.ts        trang Nghe: cắt chữ ↔ âm theo bảng, chia âm tiết, đọc & chấm phân tích
+│   ├── dictation.test.ts   31 test
+│   ├── spellingTips.ts     mẹo chính tả theo đuôi âm (nguồn: English Appendix 1, DfE)
+│   ├── spellingTips.test.ts 6 test
 │   ├── storage.ts          load/save/migrate/export/import
 │   ├── storage.test.ts     5 test
 │   ├── seed.ts             bộ âm mặc định (50 âm), seedData()
 │   ├── seed.test.ts        17 test, kiểm tra bộ âm không có nhãn/trường hợp trùng
 │   └── types.ts
-└── pages/                  StudyPage, LookupPage, ManagePage, StatsPage
+├── data/
+│   ├── pronunciations.json phát âm giọng Anh (sinh bằng npm run build:pron)
+│   └── practiceWords.json  từ điển thêm vào bộ luyện (cùng script)
+└── pages/                  StudyPage, DictationPage, LookupPage, ManagePage, StatsPage
+scripts/
+└── build-pronunciations.ts tải Britfone + CMU + VarCon, sinh src/data/pronunciations.json + practiceWords.json
 ```
 
 Stack: Vite + React 18 + TypeScript + Tailwind v3 (`darkMode: 'class'`) +
@@ -502,6 +620,13 @@ backend. Test bằng vitest, chỉ test phần logic thuần.
 | Cách gộp thẻ chiều Chữ → Âm | `reverseDeck` trong `deck.ts` |
 | Tra cứu, tô chữ trong ví dụ | `lookupSpelling` / `lookupSound` / `highlightExample` trong `lookup.ts` |
 | Bộ âm mặc định | `SEED` trong `seed.ts` (sửa xong chạy `npm test` để bắt trùng lặp) |
+| Nhãn âm ↔ âm IPA khi cắt từ ở trang Nghe | `LABEL_SOUNDS` / `SPELLING_SOUNDS` trong `dictation.ts` |
+| Quy tắc âm ơ, chữ câm, mức phạt khi cắt | `alignWord`, `SHORT_SOUNDS`, `PENALTY_*` trong `dictation.ts` |
+| Cách chia âm tiết khi hiện đáp án | `syllabify` / `ONSETS` trong `dictation.ts` |
+| Cú pháp gõ phân tích, cách chấm | `parseBreakdown` / `gradeDictation` trong `dictation.ts` |
+| Điểm độ khó, cách trộn dễ – vừa – khó | `difficulty` / `mixedQueue` trong `dictation.ts` |
+| Từ điển thêm vào bộ luyện (lọc tên riêng, từ tục, số âm tiết) | `practiceWords` / `BLOCKLIST` trong `scripts/build-pronunciations.ts` |
+| Mẹo chính tả | `SPELLING_TIPS` trong `spellingTips.ts` |
 
 Hai ngưỡng dễ lẫn nhau, cố ý để rời nhau:
 

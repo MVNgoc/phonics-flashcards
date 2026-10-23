@@ -32,6 +32,8 @@ interface Store {
     direction?: Direction,
   ) => void
   mergeParsed: (parsed: ParsedPhoneme[]) => void
+  addExtraAnswer: (word: string, answer: string) => void
+  removeExtraAnswer: (word: string, answer: string) => void
   replaceAll: (data: AppData) => void
   resetToSeed: () => void
 }
@@ -153,6 +155,24 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
+  const addExtraAnswer = useCallback((word: string, answer: string) => {
+    setData((d) => {
+      const current = d.extraAnswers?.[word] ?? []
+      if (current.includes(answer)) return d
+      return { ...d, extraAnswers: { ...d.extraAnswers, [word]: [...current, answer] } }
+    })
+  }, [])
+
+  const removeExtraAnswer = useCallback((word: string, answer: string) => {
+    setData((d) => {
+      const rest = (d.extraAnswers?.[word] ?? []).filter((a) => a !== answer)
+      const extraAnswers = { ...d.extraAnswers }
+      if (rest.length) extraAnswers[word] = rest
+      else delete extraAnswers[word]
+      return { ...d, extraAnswers }
+    })
+  }, [])
+
   const replaceAll = useCallback((next: AppData) => setData(next), [])
   const resetToSeed = useCallback(() => setData(seedData()), [])
 
@@ -166,6 +186,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     deleteGrapheme,
     gradeCard,
     mergeParsed,
+    addExtraAnswer,
+    removeExtraAnswer,
     replaceAll,
     resetToSeed,
   }

@@ -33,6 +33,12 @@ export interface Phoneme {
 
 export interface AppData {
   phonemes: Phoneme[]
+  /**
+   * Trang Nghe: phân tích âm người dùng tự thêm làm đáp án được chấp nhận, ngoài
+   * đáp án máy suy ra từ bảng. Khoá là từ (viết thường), giá trị là các phân tích
+   * dạng nhãn chuẩn hoá cách nhau bằng dấu cách, vd "d or t ur".
+   */
+  extraAnswers?: Record<string, string[]>
 }
 
 /** What actually sits in localStorage — wrapper lets storage.ts migrate later. */

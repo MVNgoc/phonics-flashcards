@@ -2,11 +2,13 @@ import { NavLink, Navigate, Route, Routes } from 'react-router-dom'
 import { StoreProvider } from './hooks/useStore'
 import { StudyPage } from './pages/StudyPage'
 import { LookupPage } from './pages/LookupPage'
+import { DictationPage } from './pages/DictationPage'
 import { ManagePage } from './pages/ManagePage'
 import { StatsPage } from './pages/StatsPage'
 
 const NAV = [
   { to: '/study', label: 'Học' },
+  { to: '/dictation', label: 'Nghe' },
   { to: '/lookup', label: 'Tra cứu' },
   { to: '/manage', label: 'Quản lý' },
   { to: '/stats', label: 'Thống kê' },
@@ -46,6 +48,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Navigate to="/study" replace />} />
             <Route path="/study" element={<StudyPage />} />
+            <Route path="/dictation" element={<DictationPage />} />
             <Route path="/lookup" element={<LookupPage />} />
             <Route path="/manage" element={<ManagePage />} />
             <Route path="/stats" element={<StatsPage />} />
