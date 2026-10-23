@@ -84,7 +84,7 @@ const VOWEL_SOUNDS = new Set([
   'æ', 'ɑː', 'ɛ', 'ɪ', 'i', 'iː', 'ɒ', 'ɔː', 'ɐ', 'ə', 'ʊ', 'uː', 'ɜː',
   'eɪ', 'aɪ', 'əʊ', 'aʊ', 'ɔɪ', 'ɪə', 'ɛə', 'ʊə',
 ])
-/** Nguyên âm không nhấn bị đọc lướt (âm ơ...): phân tích theo chữ viết. */
+/** Nguyên âm không nhấn bị đọc lướt (schwa ə, ɪ, i, ʊ): ghi theo âm nghe được (`asHeard`), chấp nhận cả ghi theo chữ. */
 const REDUCED_SOUNDS = new Set(['ə', 'ɪ', 'i', 'ʊ'])
 /**
  * Âm lướt được ghi thành nhãn có âm ngắn của chính chữ đó: about → /a/, audacity
@@ -144,7 +144,7 @@ export interface Step {
   /** Âm này là hạt nhân của một âm tiết (nguyên âm, hoặc /ul/). */
   nucleus: boolean
   stress: Stress
-  /** Nguyên âm lướt không nhấn (âm ơ...): khó nghe ra, phải đoán theo chữ. */
+  /** Nguyên âm lướt không nhấn (schwa ə...): khó nghe ra chữ nào, phải đoán. */
   reduced: boolean
   /** Cách viết đầu tiên của âm trong bảng (cách viết cơ bản), vd "or" của /or/ — không phải "augh". */
   common: boolean
@@ -355,6 +355,8 @@ function alignWord(word: string, pron: string, units: Unit[], rLabel: string, tr
 
       for (const seq of u.sounds) {
         if (!seq.every((s, k) => sounds[j + k]?.base === s)) continue
+        // /ul/ (ơ + l) chỉ ở cuối âm tiết: table, april — không phải "del" trong delicious.
+        if (seq.length > 1 && seq[seq.length - 1] === 'l' && VOWEL_SOUNDS.has(sounds[j + seq.length]?.base ?? '')) continue
         if (seq.length === 1) exact = true
         const matched = sounds.slice(j, j + seq.length)
         const step: RawStep = {
@@ -570,29 +572,58 @@ export interface BuildResult {
 }
 
 /** Mọi đáp án máy suy ra cho một từ; [] nếu không cắt được. */
-function autoAnswers(word: string, list: string[], units: Unit[], rLabel: string): Answer[] {
-  const answers: Answer[] = []
-  const seen = new Set<string>()
+/**
+ * Âm lướt không nhấn ghi theo âm nghe được → nhãn nào. Schwa ə ghi /u/; ɪ, i ghi
+ * /i/; ʊ ghi oo (S). Khoá là âm, giá trị là âm "chuẩn" để tìm nhãn trong bảng.
+ */
+const HEARD_AS: Record<string, string> = { ə: 'ɐ', ɪ: 'ɪ', i: 'ɪ', ʊ: 'ʊ' }
+
+/**
+ * Cách ghi chính của nguyên âm lướt: ghi theo âm nghe được, không theo chữ viết —
+ * about → /u/.'/b/ou/t/, delicious → /d/i/.'/l/i/./sh/u/s/. Cách ghi theo chữ
+ * (/a/, /e/, /o/...) vẫn là đáp án được chấp nhận. Nhãn nào trong bảng vốn đã đọc
+ * đúng âm đó thì giữ: schwa viết có r → /ur/ (doctor), honey → /ee/, /ul/ nguyên.
+ */
+function asHeard(steps: Step[], heardLabels: Map<string, string>): Step[] {
+  return steps.map((s) => {
+    if (!s.nucleus || !s.reduced || s.sounds.length !== 1) return s
+    const sound = s.sounds[0]
+    const label = heardLabels.get(sound)
+    if (!label || LABEL_SOUNDS[s.label]?.some((seq) => seq.length === 1 && seq[0] === sound)) return s
+    return { ...s, label, token: tokenFor(label) }
+  })
+}
+
+function autoAnswers(
+  word: string,
+  list: string[],
+  units: Unit[],
+  rLabel: string,
+  heardLabels: Map<string, string>,
+): Answer[] {
+  const found: Answer[] = []
   for (const trustTable of [false, true]) {
     for (const pron of list) {
       const { paths } = alignWord(word, pron, units, rLabel, trustTable)
       const ranked = [...paths].sort((a, b) => pathRank(a) - pathRank(b))
-      for (const path of ranked) {
-        const answer = answerFromSteps(mergeSilent(path), path.some((s) => s.silent))
-        const id = answer.tokens.join(' ')
-        if (seen.has(id)) continue
-        seen.add(id)
-        answers.push(answer)
-      }
+      for (const path of ranked) found.push(answerFromSteps(mergeSilent(path), path.some((s) => s.silent)))
     }
-    if (answers.length) break
+    if (found.length) break
   }
-  return answers
+  // Ghi theo âm nghe được lên trước, rồi tới cách ghi theo chữ.
+  const all = [...found.map((a) => answerFromSteps(asHeard(a.steps!, heardLabels), a.guessed)), ...found]
+  const seen = new Set<string>()
+  return all.filter((a) => {
+    const id = a.tokens.join(' ')
+    if (seen.has(id)) return false
+    seen.add(id)
+    return true
+  })
 }
 
 /**
  * Điểm độ khó của một từ, theo đáp án đầu tiên: nhiều âm tiết, nhiều âm, nhiều âm
- * ơ (phải đoán chữ), nhiều cách viết không cơ bản (augh thay vì or), có chữ câm.
+ * schwa (phải đoán chữ), nhiều cách viết không cơ bản (augh thay vì or), có chữ câm.
  */
 export function difficulty(answer: Answer): number {
   const steps = answer.steps ?? []
@@ -613,7 +644,14 @@ export function alignItems(
   practiceWords: string[] = [],
 ): BuildResult {
   const units = buildUnits(phonemes)
-  const rLabel = phonemes.find((p) => p.note && LABEL_SOUNDS[p.note.trim()]?.[0]?.[0] === 'ɹ')?.note?.trim() ?? '/r/'
+  const labelFor = (sound: string) =>
+    phonemes.find((p) => p.note && LABEL_SOUNDS[p.note.trim()]?.[0]?.[0] === sound)?.note?.trim()
+  const rLabel = labelFor('ɹ') ?? '/r/'
+  const heardLabels = new Map<string, string>()
+  for (const [sound, base] of Object.entries(HEARD_AS)) {
+    const label = labelFor(base)
+    if (label) heardLabels.set(sound, label)
+  }
   const result: BuildResult = { items: [], unresolved: [] }
   const tableWords = exampleWords(phonemes)
 
@@ -623,7 +661,7 @@ export function alignItems(
       result.unresolved.push({ word, reason: 'no-pron' })
       continue
     }
-    const answers = autoAnswers(word, list, units, rLabel)
+    const answers = autoAnswers(word, list, units, rLabel, heardLabels)
     if (!answers.length) result.unresolved.push({ word, reason: 'no-align' })
     else result.items.push({ word, answers, fromTable: true, difficulty: difficulty(answers[0]) })
   }
@@ -633,7 +671,7 @@ export function alignItems(
     const list = prons[word]
     if (taken.has(word) || !list?.length) continue
     taken.add(word)
-    const answers = autoAnswers(word, list, units, rLabel)
+    const answers = autoAnswers(word, list, units, rLabel, heardLabels)
     if (!answers.length || answers[0].guessed) continue
     result.items.push({ word, answers, fromTable: false, difficulty: difficulty(answers[0]) })
   }

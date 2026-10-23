@@ -47,7 +47,7 @@ có data mới.
 
 ```bash
 npm run typecheck   # tsc --noEmit
-npm test            # unit test cho sm2, deck, lookup, storage, seed, dictation, spellingTips (139 test)
+npm test            # unit test cho sm2, deck, lookup, storage, seed, dictation, spellingTips (143 test)
 npm run build:pron  # sinh lại src/data/*.json cho trang Nghe (cần mạng, xem Trang Nghe)
 npm run test:watch  # vitest watch mode
 npm run build       # typecheck + build ra dist/
@@ -381,7 +381,7 @@ Bộ luyện (~7.700 từ với bảng mặc định) gồm:
   [VarCon](http://wordlist.aspell.net/varcon/) (SCOWL).
 
 Mỗi từ có điểm độ khó (`difficulty` trong `dictation.ts`): số âm tiết, số âm, số âm
-ơ (phải đoán chữ), số cách viết không cơ bản (cách viết không đứng đầu trong âm của
+schwa (phải đoán chữ), số cách viết không cơ bản (cách viết không đứng đầu trong âm của
 nó, vd `augh` của /or/), có chữ câm. Mỗi phiên chia bộ từ thành ba phần bằng nhau
 theo điểm (dễ / vừa / khó), xáo từng phần rồi lấy xen kẽ — **cứ ba từ liên tiếp có
 đủ một dễ, một vừa, một khó** (`mixedQueue`). Không có nút chọn mức.
@@ -391,8 +391,8 @@ theo điểm (dễ / vừa / khó), xáo từng phần rồi lấy xen kẽ — 
 Sau khi chấm, nếu đuôi của từ khớp một mẹo thì hiện mẹo đó, cách từ này viết đuôi
 đó, và số liệu thật trong bộ luyện, vd:
 
-> /u/s/ (âm ơ + s) → -ous · từ này viết -ous — Tính từ gần như luôn -ous (famous,
-> nervous); danh từ thường -us (campus, virus). Trong bộ luyện: -ous 43 · -us 39
+> /u/s/ → -ous · từ này viết -ous — Tính từ gần như luôn -ous (famous, nervous);
+> danh từ thường -us (campus, virus). Trong bộ luyện: -ous 43 · -us 39 · -ass 5 · -as 4
 
 Mẹo lấy theo **English Appendix 1: Spelling** của National Curriculum in England
 (Department for Education, 2013), ghi kèm lớp dạy (Year 1 – 6): -ous / -us, -cious /
@@ -423,8 +423,17 @@ Không soạn tay. Đáp án suy ra từ **chính bảng âm của bạn** + ph�
 
 Hệ quả: sửa bảng ở `/manage` là đáp án đổi theo. Vài quy ước khi cắt:
 
-- **Âm ơ không nhấn** ghi theo âm ngắn của chữ viết: `about` → `/a/`, chữ `ci`
-  trong `audacity` → `/s/i/`. Chữ có r (`er`, `or`, `ar`...) đọc ơ → `/ur/` (`doctor`).
+- **Nguyên âm lướt không nhấn ghi theo âm nghe được**, không theo chữ viết — đây là
+  đáp án chính:
+  - schwa (ə, nghe như "ơ") → **`/u/`**: `about` → `/u/.'/b/ou/t/`, `student` →
+    `'/s/t/yoo/./d/u/n/t/`;
+  - ɪ / i lướt → **`/i/`**: `delicious` → `/d/i/.'/l/i/./sh/u/s/`, `because` → `/b/i/.'/k/or/z/`;
+  - ʊ lướt → **`oo (S)`**.
+
+  Ghi theo âm ngắn của chữ (`/a/.'/b/ou/t/`, `/d/e/n/t/`, `/d/e/.'/l/i/…`) vẫn được
+  chấp nhận. Nhãn nào trong bảng vốn đọc đúng âm đó thì giữ: schwa viết có r (`er`,
+  `or`, `our`, `re`...) → `/ur/` (`doctor`, `nature`), `honey` → `/ee/`; `/ul/`
+  (`table`, `pencil`) giữ nguyên. Hàm `asHeard` / bảng `HEARD_AS` trong `dictation.ts`.
 - **r trước nguyên âm** (`story`): chấp nhận cả `/s/t/or/./i/` lẫn `/s/t/or/./r/i/`.
 - **Chữ ngoài bảng** (`l` trong `talk`) coi là chữ câm, gộp vào cụm trước; đáp án
   đó hiện cảnh báo *máy đoán*.
@@ -432,7 +441,7 @@ Hệ quả: sửa bảng ở `/manage` là đáp án đổi theo. Vài quy ướ
   (`heart` → `ea` của `/a/`); từ điển đọc khác bảng (`because`) thì tin bảng.
 
 **Nhiều đáp án được chấp nhận**: từ có nhiều cách đọc, hoặc có nhiều cách cắt cùng
-hợp lệ (`monopoly`: chữ o đọc ơ ghi `/o/` hay `/u/` đều được). Phân tích của bạn khác
+hợp lệ (`lemon`: schwa ghi `/u/` hay theo chữ `/o/` đều được). Phân tích của bạn khác
 đáp án mà bạn thấy đúng → bấm **Cách của tôi cũng đúng → thêm vào đáp án**. Đáp án
 tự thêm lưu ở `extraAnswers` trong dữ liệu (đi theo Export / Import), bỏ được bằng
 nút `× bỏ`.
@@ -584,7 +593,7 @@ src/
 │   ├── lookup.ts           tra cứu chữ ↔ âm, tô phần chữ trong ví dụ
 │   ├── lookup.test.ts      22 test
 │   ├── dictation.ts        trang Nghe: cắt chữ ↔ âm theo bảng, chia âm tiết, đọc & chấm phân tích
-│   ├── dictation.test.ts   31 test
+│   ├── dictation.test.ts   37 test
 │   ├── spellingTips.ts     mẹo chính tả theo đuôi âm (nguồn: English Appendix 1, DfE)
 │   ├── spellingTips.test.ts 6 test
 │   ├── storage.ts          load/save/migrate/export/import
@@ -622,7 +631,7 @@ backend. Test bằng vitest, chỉ test phần logic thuần.
 | Tra cứu, tô chữ trong ví dụ | `lookupSpelling` / `lookupSound` / `highlightExample` trong `lookup.ts` |
 | Bộ âm mặc định | `SEED` trong `seed.ts` (sửa xong chạy `npm test` để bắt trùng lặp) |
 | Nhãn âm ↔ âm IPA khi cắt từ ở trang Nghe | `LABEL_SOUNDS` / `SPELLING_SOUNDS` trong `dictation.ts` |
-| Quy tắc âm ơ, chữ câm, mức phạt khi cắt | `alignWord`, `SHORT_SOUNDS`, `PENALTY_*` trong `dictation.ts` |
+| Nguyên âm lướt ghi theo âm nghe được (`HEARD_AS`), chữ câm, mức phạt khi cắt | `asHeard`, `alignWord`, `SHORT_SOUNDS`, `PENALTY_*` trong `dictation.ts` |
 | Cách chia âm tiết khi hiện đáp án | `syllabify` / `ONSETS` trong `dictation.ts` |
 | Cú pháp gõ phân tích, cách chấm | `parseBreakdown` / `gradeDictation` trong `dictation.ts` |
 | Điểm độ khó, cách trộn dễ – vừa – khó | `difficulty` / `mixedQueue` trong `dictation.ts` |

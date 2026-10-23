@@ -79,10 +79,31 @@ describe('buildItems: cắt chữ ↔ âm theo bảng', () => {
     expect(formatAnswer(a)).toBe("'/d/or/./t/ur/")
   })
 
-  it('âm ơ không nhấn ghi theo âm ngắn của chữ viết: award → /a/, không ra /ai/ hay /ar/', () => {
+  it('schwa không nhấn ghi là /u/; ghi theo âm ngắn của chữ cũng được — award: /u/ hoặc /a/, không ra /ai/ hay /ar/', () => {
     const item = itemFor('award', ['ə w ˈɔː d'])
-    expect(item.answers.map((a) => a.tokens.join(' '))).toEqual(['a w or d'])
+    expect(item.answers.map((a) => a.tokens.join(' '))).toEqual(['u w or d', 'a w or d'])
+    expect(item.answers[0].steps![0].spelling).toBe('a')
     expect(item.answers[0].stress).toBe(1)
+  })
+
+  it('nguyên âm lướt ɪ ghi /i/ theo âm nghe được, chấp nhận cả ghi theo chữ', () => {
+    expect(itemFor('delicious', ['d ɪ l ˈɪ ʃ ə s']).answers.map((a) => a.tokens.join(' '))).toEqual([
+      'd i l i sh u s',
+      'd e l i sh u s',
+    ])
+  })
+
+  it('nhãn trong bảng vốn đọc đúng âm lướt thì giữ: honey → /ee/', () => {
+    expect(itemFor('honey', ['h ˈɐ n i']).answers[0].tokens).toEqual(['h', 'u', 'n', 'ee'])
+  })
+
+  it('schwa viết có r giữ /ur/, /ul/ giữ nguyên', () => {
+    expect(itemFor('doctor', ['d ˈɒ k t ə']).answers[0].tokens).toEqual(['d', 'o', 'k', 't', 'ur'])
+    expect(itemFor('pencil', ['p ˈɛ n s ə l']).answers[0].tokens).toEqual(['p', 'e', 'n', 's', 'ul'])
+    expect(itemFor('student', ['s t j ˈuː d ə n t']).answers.map((a) => a.tokens.join(' '))).toEqual([
+      's t yoo d u n t',
+      's t yoo d e n t',
+    ])
   })
 
   it('th ghi rõ vô thanh / hữu thanh theo âm thật, oo ghi rõ long / short', () => {
@@ -95,6 +116,11 @@ describe('buildItems: cắt chữ ↔ âm theo bảng', () => {
   it('chia âm tiết với th (UV): ath.lete', () => {
     const a = itemFor('athlete', ['ˈæ θ l iː t']).answers[0]
     expect(a.syllables.map((syl) => syl.map((s) => s.token))).toEqual([['a', 'th (UV)'], ['l', 'ee', 't']])
+  })
+
+  it('/ul/ chỉ ở cuối âm tiết: delicious bắt đầu bằng /d/i/l/, không phải /d/ul/', () => {
+    expect(itemFor('delicious', ['d ɪ l ˈɪ ʃ ə s']).answers[0].tokens.slice(0, 3)).toEqual(['d', 'i', 'l'])
+    expect(itemFor('pencil', ['p ˈɛ n s ə l']).answers[0].tokens).toEqual(['p', 'e', 'n', 's', 'ul'])
   })
 
   it('ture: tu đọc /ch/, re đọc /ur/', () => {
@@ -125,7 +151,7 @@ describe('buildItems: cắt chữ ↔ âm theo bảng', () => {
 
   it('bảng ghi từ là ví dụ của trường hợp nào thì tin bảng (because ở au của /or/)', () => {
     const { items } = buildItems(seed, { because: ['b ɪ k ˈɒ z'] })
-    expect(items.find((i) => i.word === 'because')!.answers[0].tokens).toEqual(['b', 'e', 'k', 'or', 'z'])
+    expect(items.find((i) => i.word === 'because')!.answers[0].tokens).toEqual(['b', 'i', 'k', 'or', 'z'])
   })
 
   it('cách cắt khớp với ví dụ trong bảng lên đầu (heart → ea của /a/)', () => {

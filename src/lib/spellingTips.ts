@@ -15,7 +15,7 @@ export const TIPS_SOURCE = {
   url: 'https://www.gov.uk/government/publications/national-curriculum-in-england-english-programmes-of-study',
 }
 
-/** Một âm trong mẫu: cách gõ được chấp nhận (dạng chuẩn hoá) và/hoặc phải là âm ơ lướt. */
+/** Một âm trong mẫu: cách gõ được chấp nhận (dạng chuẩn hoá) và/hoặc phải là nguyên âm lướt (schwa). */
 interface PatternPart {
   tokens?: string[]
   reduced?: boolean
@@ -23,7 +23,7 @@ interface PatternPart {
 
 export interface SpellingTip {
   id: string
-  /** Đuôi âm, vd "/u/s/ (âm ơ + s)". */
+  /** Đuôi âm, vd "/u/s/". */
   sound: string
   /** Cách viết thường gặp, vd "-ous". */
   spelling: string
@@ -46,7 +46,7 @@ const SHORT_SOUNDS = new Set(['æ', 'ɛ', 'ɪ', 'ɒ', 'ɐ', 'ʊ'])
 export const SPELLING_TIPS: SpellingTip[] = [
   {
     id: 'ous',
-    sound: '/u/s/ (âm ơ + s)',
+    sound: '/u/s/',
     spelling: '-ous',
     explain:
       'Tính từ đọc /u/s/ ở cuối gần như luôn viết -ous (famous, dangerous, nervous, various). Danh từ thì thường là -us (campus, virus, bonus, status).',
@@ -56,7 +56,7 @@ export const SPELLING_TIPS: SpellingTip[] = [
   },
   {
     id: 'cious-tious',
-    sound: '/sh/ơ/s/',
+    sound: '/sh/u/s/',
     spelling: '-cious / -tious',
     explain:
       'Từ gốc có -ce thì viết -cious (space → spacious, grace → gracious, vice → vicious). Từ gốc có -tion thì viết -tious (ambition → ambitious, infection → infectious). Ngoại lệ: anxious.',
@@ -66,7 +66,7 @@ export const SPELLING_TIPS: SpellingTip[] = [
   },
   {
     id: 'tion',
-    sound: '/sh/ơ/n/',
+    sound: '/sh/u/n/',
     spelling: '-tion / -ssion / -sion / -cian',
     explain:
       '-tion phổ biến nhất (nation, action, invention). -ssion khi từ gốc tận cùng -ss hoặc -mit (discuss → discussion, admit → admission). -sion khi từ gốc tận cùng -d hoặc -se (expand → expansion, tense → tension). -cian khi từ gốc tận cùng -c hoặc -cs, thường chỉ người (music → musician, electric → electrician).',
@@ -76,9 +76,9 @@ export const SPELLING_TIPS: SpellingTip[] = [
   },
   {
     id: 'sion-zh',
-    sound: '/zh/ơ/n/',
+    sound: '/zh/u/n/',
     spelling: '-sion',
-    explain: 'Đuôi /zh/ơ/n/ viết -sion (vision, television, decision, division, confusion).',
+    explain: 'Đuôi /zh/u/n/ viết -sion (vision, television, decision, division, confusion).',
     stage: 'Year 3–4',
     pattern: [t('zh'), SCHWA, t('n')],
     minSyllables: 2,
@@ -87,7 +87,7 @@ export const SPELLING_TIPS: SpellingTip[] = [
     id: 'ture',
     sound: '/ch/ur/',
     spelling: '-ture',
-    explain: 'Đuôi /ch/ur/ (âm ơ) thường viết -ture (picture, nature, adventure, creature, furniture).',
+    explain: 'Đuôi /ch/ur/ thường viết -ture (picture, nature, adventure, creature, furniture).',
     stage: 'Year 3–4',
     pattern: [t('ch'), { tokens: ['ur'], reduced: true }],
     minSyllables: 2,
@@ -96,7 +96,7 @@ export const SPELLING_TIPS: SpellingTip[] = [
     id: 'sure',
     sound: '/zh/ur/',
     spelling: '-sure',
-    explain: 'Đuôi /zh/ur/ (âm ơ) viết -sure (measure, treasure, pleasure, enclosure).',
+    explain: 'Đuôi /zh/ur/ viết -sure (measure, treasure, pleasure, enclosure).',
     stage: 'Year 3–4',
     pattern: [t('zh'), { tokens: ['ur'], reduced: true }],
     minSyllables: 2,
@@ -113,7 +113,7 @@ export const SPELLING_TIPS: SpellingTip[] = [
   },
   {
     id: 'able-ible',
-    sound: '/ơ/b/ul/',
+    sound: '/u/b/ul/',
     spelling: '-able / -ible',
     explain:
       '-able phổ biến hơn -ible. Bỏ đuôi đi mà còn lại một từ trọn vẹn thì thường là -able (depend → dependable, comfort → comfortable); không thì thường là -ible (possible, horrible, terrible, visible). Từ có họ -ation thì dùng -able (adoration → adorable).',
@@ -123,7 +123,7 @@ export const SPELLING_TIPS: SpellingTip[] = [
   },
   {
     id: 'ant-ent',
-    sound: '/ơ/n/t/',
+    sound: '/u/n/t/',
     spelling: '-ant / -ent',
     explain:
       'Không nghe ra -ant hay -ent. Có từ cùng họ đọc rõ /ai/ hoặc /a/ (observation, hesitation) thì dùng -ant (observant, hesitant). Sau c đọc /s/, g đọc /j/ hoặc qu thì dùng -ent (innocent, decent, intelligent, frequent). Còn lại phải nhớ từng từ.',
@@ -133,7 +133,7 @@ export const SPELLING_TIPS: SpellingTip[] = [
   },
   {
     id: 'ance-ence',
-    sound: '/ơ/n/s/',
+    sound: '/u/n/s/',
     spelling: '-ance / -ence',
     explain:
       'Đi theo -ant / -ent: observant → observance, innocent → innocence, frequent → frequency. Sau c đọc /s/, g đọc /j/ hoặc qu thì dùng -ence (innocence, intelligence). Còn lại phải nhớ từng từ.',
@@ -173,7 +173,7 @@ export const SPELLING_TIPS: SpellingTip[] = [
     sound: '/j/ cuối từ',
     spelling: '-dge / -ge',
     explain:
-      'Ngay sau nguyên âm ngắn viết -dge (badge, edge, bridge, dodge, fudge). Sau nguyên âm dài, phụ âm hoặc âm ơ viết -ge (age, huge, change, charge, village).',
+      'Ngay sau nguyên âm ngắn viết -dge (badge, edge, bridge, dodge, fudge). Sau nguyên âm dài, phụ âm hoặc /u/ lướt (schwa) viết -ge (age, huge, change, charge, village).',
     stage: 'Year 2',
     pattern: [t('j')],
   },
