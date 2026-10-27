@@ -1,10 +1,19 @@
+import { Fragment, useMemo } from 'react'
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom'
-import { StoreProvider } from './hooks/useStore'
+import { StoreProvider, useStore } from './hooks/useStore'
+import { computeStats, todayISO } from './lib/sm2'
 import { StudyPage } from './pages/StudyPage'
 import { LookupPage } from './pages/LookupPage'
 import { DictationPage } from './pages/DictationPage'
 import { ManagePage } from './pages/ManagePage'
 import { StatsPage } from './pages/StatsPage'
+
+const DATE_FORMAT = new Intl.DateTimeFormat('vi-VN', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+})
 
 const NAV = [
   { to: '/study', label: 'Học' },
@@ -18,31 +27,7 @@ export default function App() {
   return (
     <StoreProvider>
       <div className="min-h-screen">
-        <header className="border-b border-sky-500/30 bg-slate-950/60 shadow-[0_1px_16px_rgb(0_240_255/0.15)] backdrop-blur-sm">
-          <div className="mx-auto flex max-w-3xl items-center justify-between gap-2 p-4 sm:gap-4">
-            <span className="cp-neon hidden font-bold uppercase tracking-[0.2em] sm:inline">
-              Phonics<span className="text-rose-500">//</span>
-              <span className="cp-cursor text-sky-500">▮</span>
-            </span>
-            <nav className="flex gap-1">
-              {NAV.map((n) => (
-                <NavLink
-                  key={n.to}
-                  to={n.to}
-                  className={({ isActive }) =>
-                    `whitespace-nowrap border-b-2 px-2.5 py-1.5 text-sm font-semibold uppercase tracking-wider transition sm:px-3 ${
-                      isActive
-                        ? 'cp-neon border-sky-500 bg-sky-500/10'
-                        : 'border-transparent text-slate-400 hover:border-rose-500/60 hover:text-rose-400'
-                    }`
-                  }
-                >
-                  {n.label}
-                </NavLink>
-              ))}
-            </nav>
-          </div>
-        </header>
+        <Masthead />
 
         <main className="mx-auto max-w-3xl p-4 pb-16">
           <Routes>
@@ -57,5 +42,43 @@ export default function App() {
         </main>
       </div>
     </StoreProvider>
+  )
+}
+
+/** Đầu trang kiểu tờ báo: dòng ngày + số cần ôn, tên app ở giữa, menu kẹp giữa hai đường kẻ đôi. */
+function Masthead() {
+  const { data } = useStore()
+  const today = todayISO()
+  const dueToday = useMemo(() => computeStats(data.phonemes, today).dueToday, [data.phonemes, today])
+
+  return (
+    <header className="mx-auto max-w-3xl px-4 pt-5">
+      <div className="flex flex-wrap justify-between gap-x-4 border-b border-slate-900 pb-1.5 text-[11px] uppercase tracking-[0.16em] text-slate-500">
+        <span>{DATE_FORMAT.format(new Date())}</span>
+        <span>Cần ôn hôm nay: {dueToday} trường hợp</span>
+      </div>
+      <div className="py-3 text-center font-display text-4xl font-black tracking-tight sm:py-4 sm:text-5xl">
+        The Phonics Review
+      </div>
+      <nav className="flex flex-wrap items-center justify-center gap-x-1 border-y-4 border-double border-slate-900 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] sm:gap-x-2 sm:text-sm">
+        {NAV.map((n, i) => (
+          <Fragment key={n.to}>
+            {i > 0 && <span className="text-slate-300">·</span>}
+            <NavLink
+              to={n.to}
+              className={({ isActive }) =>
+                `whitespace-nowrap px-1.5 py-1 underline-offset-[6px] transition-colors sm:px-2 ${
+                  isActive
+                    ? 'text-rose-500 underline decoration-2'
+                    : 'text-slate-600 hover:text-rose-500'
+                }`
+              }
+            >
+              {n.label}
+            </NavLink>
+          </Fragment>
+        ))}
+      </nav>
+    </header>
   )
 }

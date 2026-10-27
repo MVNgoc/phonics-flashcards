@@ -539,15 +539,18 @@ nay" tính cả thẻ mới chưa học. 4 ô số và top 5 chỉ tính chiều
 
 ## Giao diện
 
-Phong cách Cyberpunk, chỉ có nền tối: class `dark` luôn bật sẵn trên `<html>`.
-Bảng màu nằm ở `tailwind.config.ts`: năm dải `slate` / `sky` / `emerald` / `rose` /
-`amber` được định nghĩa lại thành màu neon nhưng giữ tên, nên component không phải
-đổi class. Khung HUD, nút, chữ neon và hiệu ứng (glitch khi sang thẻ, rung khi gõ
-sai, thanh tiến độ sọc) ở `src/index.css`. Hiệu ứng tự tắt khi hệ thống bật
-`prefers-reduced-motion`.
+Phong cách Editorial (trang báo / tạp chí in), chỉ có nền sáng: giấy kem, chữ mực,
+đường kẻ mảnh, góc vuông, đỏ báo làm màu nhấn. Không bật class `dark`, nên các biến
+thể `dark:` còn trong component bị bỏ qua. Bảng màu nằm ở `tailwind.config.ts`: năm
+dải `slate` (giấy / mực) / `sky` (xanh mực) / `emerald` (đúng) / `rose` (sai, nút
+chính) / `amber` (khó) được định nghĩa lại nhưng giữ tên, nên component không phải
+đổi class. Khung bài, nút, chữ tít và hiệu ứng (đề bài hiện dần khi sang thẻ, rung
+nhẹ khi gõ sai) ở `src/index.css`; tên class `cp-*` giữ lại từ bản Cyberpunk cũ.
+Hiệu ứng tự tắt khi hệ thống bật `prefers-reduced-motion`. Đầu trang kiểu tờ báo:
+ngày, số trường hợp cần ôn hôm nay, tên app và menu.
 
-Font Chakra Petch (chữ thường) và JetBrains Mono (ô gõ) lấy từ Google Fonts, đều có
-tiếng Việt; mất mạng thì rơi về font hệ thống.
+Font Fraunces (tít), Source Serif 4 (chữ thường) và JetBrains Mono (ô gõ) lấy từ
+Google Fonts, đều có tiếng Việt; mất mạng thì rơi về font hệ thống.
 
 ## Deploy Netlify
 

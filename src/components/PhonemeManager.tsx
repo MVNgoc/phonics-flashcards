@@ -5,7 +5,7 @@ import { isLearned } from '../lib/sm2'
 
 const btn = 'rounded-lg px-3 py-1.5 text-sm font-medium'
 const input =
-  'rounded-lg border border-slate-600 bg-slate-950/80 px-3 py-1.5 text-sm focus:border-sky-500 focus:outline-none'
+  'rounded-lg border border-slate-300 bg-white/60 px-3 py-1.5 text-sm focus:border-slate-900 focus:outline-none'
 
 function AddPhonemeForm() {
   const { addPhoneme } = useStore()
@@ -85,7 +85,7 @@ function ExampleChip({
         type="button"
         onClick={() => setDraft(word)}
         title="Bấm để sửa"
-        className="hover:text-sky-400"
+        className="hover:text-sky-600"
       >
         {word}
       </button>
@@ -157,7 +157,7 @@ function GraphemeRow({ phoneme, grapheme }: { phoneme: Phoneme; grapheme: Graphe
   const r = grapheme.review
 
   return (
-    <li className="flex flex-col gap-2 rounded-lg bg-slate-50 p-3 dark:bg-slate-800/60 sm:flex-row sm:items-start sm:justify-between">
+    <li className="flex flex-col gap-2 rounded-lg bg-slate-100/70 p-3 dark:bg-slate-800/60 sm:flex-row sm:items-start sm:justify-between">
       <div className="flex-1 space-y-2">
         <div className="flex items-center gap-2">
           <input
@@ -281,7 +281,7 @@ export function PhonemeManager() {
             onClick={() => setFilter(f)}
             className={`${btn} border ${
               filter === f
-                ? 'cp-btn border-sky-500'
+                ? 'cp-btn border-rose-500'
                 : 'border-slate-300 dark:border-slate-600'
             }`}
           >

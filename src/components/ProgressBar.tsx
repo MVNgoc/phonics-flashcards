@@ -19,7 +19,7 @@ export function ProgressBar({ percent, learned, total, label = 'Đã thuộc', u
         </span>
       </div>
       <div
-        className="h-3 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700"
+        className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700"
         role="progressbar"
         aria-valuenow={percent}
         aria-valuemin={0}

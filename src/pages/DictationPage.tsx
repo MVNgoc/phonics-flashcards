@@ -36,7 +36,7 @@ const chip = 'rounded-full px-3 py-1 text-sm font-medium'
 const chipGreen = `${chip} bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300`
 const chipRed = `${chip} bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300`
 const inputClass =
-  'w-full rounded-lg border border-slate-600 bg-slate-950/80 px-3 py-2 text-center text-lg focus:border-sky-500 focus:shadow-[0_0_14px_rgb(0_240_255/0.35)] focus:outline-none'
+  'w-full border-0 border-b-2 border-slate-900 bg-transparent px-3 py-2 text-center text-lg focus:border-sky-600 focus:outline-none'
 const ghostButton =
   'rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium hover:border-sky-500 hover:text-sky-600 dark:border-slate-600'
 
@@ -82,7 +82,7 @@ export function DictationPage() {
     return <div className="cp-panel p-10 text-center">Không tải được từ điển phát âm. Thử tải lại trang.</div>
   }
   if (!built) {
-    return <div className="cp-panel p-10 text-center text-slate-400">Đang tải từ điển phát âm…</div>
+    return <div className="cp-panel p-10 text-center text-slate-500">Đang tải từ điển phát âm…</div>
   }
 
   const poolFor = (filter: string) => {
@@ -112,11 +112,11 @@ export function DictationPage() {
           title="Luyện mọi từ, hoặc chỉ những từ có một đuôi chính tả"
           className="max-w-full rounded-lg border border-slate-300 bg-transparent px-2 py-1 dark:border-slate-600"
         >
-          <option value="" className="bg-slate-900">
+          <option value="">
             Mọi từ ({built.items.length})
           </option>
           {SPELLING_TIPS.filter((t) => tips.get(t.id)?.words.length).map((t) => (
-            <option key={t.id} value={t.id} className="bg-slate-900">
+            <option key={t.id} value={t.id}>
               Mẹo: {t.sound} → {t.spelling} ({tips.get(t.id)!.words.length})
             </option>
           ))}
@@ -130,7 +130,7 @@ export function DictationPage() {
               className="max-w-[12rem] rounded-lg border border-slate-300 bg-transparent px-2 py-1 dark:border-slate-600"
             >
               {speech.voices.map((v) => (
-                <option key={v.voiceURI} value={v.voiceURI} className="bg-slate-900">
+                <option key={v.voiceURI} value={v.voiceURI}>
                   {v.name} ({v.lang})
                 </option>
               ))}
@@ -145,14 +145,14 @@ export function DictationPage() {
       </div>
 
       {speech.supported && speech.voices.length > 0 && !speech.hasBritish && (
-        <p className="rounded-lg border border-amber-500/50 p-3 text-sm text-amber-500">
+        <p className="rounded-lg border border-amber-500/50 p-3 text-sm text-amber-700">
           Máy chưa có giọng Anh-Anh (en-GB) nên đang đọc bằng giọng tiếng Anh khác. Cài thêm giọng English (UK)
           trong cài đặt giọng nói của hệ điều hành rồi tải lại trang.
         </p>
       )}
 
       {!speech.supported && (
-        <p className="rounded-lg border border-amber-500/50 p-3 text-sm text-amber-500">
+        <p className="rounded-lg border border-amber-500/50 p-3 text-sm text-amber-700">
           Trình duyệt này không có Web Speech API nên không đọc được từ. Thử Chrome, Edge hoặc Safari.
         </p>
       )}
@@ -212,7 +212,7 @@ function StartPanel({
           <ul className="mx-auto mt-1 max-w-md space-y-0.5 text-left text-sm text-slate-500 dark:text-slate-400">
             <li>
               · <b>{fromTable}</b> từ ví dụ trong bộ âm của bạn ở trang{' '}
-              <Link to="/manage" className="underline hover:text-sky-400">
+              <Link to="/manage" className="underline hover:text-rose-500">
                 Quản lý
               </Link>{' '}
               (các từ ví dụ của mọi âm, mọi trường hợp)
@@ -223,7 +223,7 @@ function StartPanel({
                 href="https://github.com/JoseLlarena/Britfone"
                 target="_blank"
                 rel="noreferrer"
-                className="underline hover:text-sky-400"
+                className="underline hover:text-rose-500"
               >
                 Britfone
               </a>{' '}
@@ -237,7 +237,7 @@ function StartPanel({
           Gõ âm cách nhau bằng <code>/</code> hoặc dấu cách, <code>.</code> ngăn âm tiết, <code>'</code> đặt trước
           âm tiết được nhấn:
         </p>
-        <p className="text-center font-mono text-slate-300">'/d/or/./t/ur/ &nbsp;=&nbsp; 'd or . t ur</p>
+        <p className="text-center font-mono text-slate-900">'/d/or/./t/ur/ &nbsp;=&nbsp; 'd or . t ur</p>
         <p>
           Âm có biến thể thì ghi rõ trong ngoặc: <code>oo (L)</code> / <code>oo (S)</code> (long / short oo),{' '}
           <code>th (UV)</code> / <code>th (V)</code> (th vô thanh / hữu thanh), vd <code>/th (UV)/i/ng/k/</code>.
@@ -429,7 +429,7 @@ function DictationCard({
         </h3>
         <AnswerView answer={answer} labels={labels} />
         {answer.guessed && (
-          <p className="text-xs text-amber-500">
+          <p className="text-xs text-amber-700">
             Máy đoán: có chữ không nằm trong bảng âm, coi là chữ câm. Bạn phân tích khác thì thêm làm đáp án.
           </p>
         )}
@@ -491,14 +491,14 @@ function TipsSection({ item, stats }: { item: DictationItem; stats: Map<string, 
       {hits.map(({ tip, spelling }) => {
         const spellings = stats.get(tip.id)?.spellings ?? []
         return (
-          <div key={tip.id} className="rounded-lg border border-slate-600 p-3 text-sm">
+          <div key={tip.id} className="border border-slate-300 p-3 text-sm">
             <p className="font-semibold">
-              {tip.sound} → <span className="text-sky-400">{tip.spelling}</span>
+              {tip.sound} → <span className="text-sky-600">{tip.spelling}</span>
               <span className="ml-2 font-normal text-slate-400">
-                · từ này viết <b className="text-slate-200">-{spelling}</b>
+                · từ này viết <b className="text-slate-900">-{spelling}</b>
               </span>
             </p>
-            <p className="mt-1 text-slate-400">{tip.explain}</p>
+            <p className="mt-1 text-slate-500">{tip.explain}</p>
             {spellings.length > 0 && (
               <p className="mt-1 text-xs text-slate-500">
                 Trong bộ luyện:{' '}
@@ -510,7 +510,7 @@ function TipsSection({ item, stats }: { item: DictationItem; stats: Map<string, 
             )}
             <p className="mt-1 text-xs text-slate-500">
               Nguồn:{' '}
-              <a href={TIPS_SOURCE.url} target="_blank" rel="noreferrer" className="underline hover:text-sky-400">
+              <a href={TIPS_SOURCE.url} target="_blank" rel="noreferrer" className="underline hover:text-rose-500">
                 {TIPS_SOURCE.title}
               </a>
               , {tip.stage}
@@ -551,7 +551,7 @@ function InputPreview({
           {k > 0 && <span className="text-slate-500">.</span>}
           <span
             className={`rounded border px-1.5 py-0.5 ${
-              k === stressed ? 'border-sky-500 text-sky-400' : 'border-slate-600 text-slate-300'
+              k === stressed ? 'border-sky-500 text-sky-600' : 'border-slate-300 text-slate-700'
             }`}
           >
             {k === stressed && 'ˈ'}
@@ -580,11 +580,11 @@ function AnswerView({ answer, labels }: { answer: Answer; labels: Map<string, st
         <div
           key={k}
           className={`relative flex gap-1 rounded-lg border px-2 pb-1 pt-2 ${
-            k === stressed ? 'border-sky-500 shadow-[0_0_10px_rgb(0_240_255/0.3)]' : 'border-slate-600'
+            k === stressed ? 'border-sky-500' : 'border-slate-300'
           }`}
         >
           {k === stressed && (
-            <span className="absolute -top-2.5 left-1.5 bg-slate-950 px-1 text-xs text-sky-400">ˈnhấn</span>
+            <span className="absolute -top-2.5 left-1.5 bg-slate-50 px-1 text-xs text-sky-600">ˈnhấn</span>
           )}
           {syl.map((s, i) => (
             <div key={i} className="flex min-w-[2rem] flex-col items-center">

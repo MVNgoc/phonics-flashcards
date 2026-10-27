@@ -99,8 +99,8 @@ function AnswerInput({
         autoCapitalize="off"
         autoComplete="off"
         spellCheck={false}
-        className={`w-full rounded-lg border bg-slate-950/80 px-3 py-2 text-center text-lg focus:border-sky-500 focus:shadow-[0_0_14px_rgb(0_240_255/0.35)] focus:outline-none ${
-          bad ? 'cp-shake border-rose-500 text-rose-600' : 'border-slate-600'
+        className={`w-full border-0 border-b-2 bg-transparent px-3 py-2 text-center text-lg focus:border-sky-600 focus:outline-none ${
+          bad ? 'cp-shake border-rose-500 text-rose-600' : 'border-slate-900'
         }`}
       />
     </form>
@@ -121,7 +121,7 @@ function GroupHeader({
       <div key={group.id} className="cp-neon cp-glitch text-5xl font-bold md:text-6xl">
         {group.prompt}
       </div>
-      <div className="mt-2 text-xs uppercase tracking-widest text-slate-400">
+      <div className="mt-2 text-xs uppercase tracking-widest text-slate-500">
         {group.kind}
         {showCaseCount && ` · ${group.items.length} ${COPY[direction].unit}`}
       </div>

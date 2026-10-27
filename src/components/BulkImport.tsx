@@ -80,7 +80,7 @@ export function BulkImport() {
 
   return (
     <section className="cp-panel p-4">
-      <h2 className="mb-1 font-semibold">Nhập nhanh</h2>
+      <h2 className="mb-1 font-display text-xl font-semibold">Nhập nhanh</h2>
       <p className="mb-3 text-sm text-slate-500 dark:text-slate-400">
         Mỗi dòng một âm: <code>vowel | âm | trường hợp: ví dụ, ví dụ | ...</code>. Âm trùng nhãn
         sẽ được gộp thêm, không ghi đè. Nhãn để trống thì luôn tạo âm mới.
@@ -94,7 +94,7 @@ export function BulkImport() {
         rows={6}
         spellCheck={false}
         placeholder={PLACEHOLDER}
-        className="w-full rounded-lg border border-slate-600 bg-slate-950/80 p-3 font-mono text-sm focus:border-sky-500 focus:outline-none"
+        className="w-full rounded-lg border border-slate-300 bg-white/60 p-3 font-mono text-sm focus:border-slate-900 focus:outline-none"
       />
       <div className="mt-2 flex flex-wrap items-center gap-3">
         <button

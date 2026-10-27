@@ -30,6 +30,26 @@ const COPY: Record<
   },
 }
 
+/** Icon con mắt nét mảnh, theo màu chữ; nhắm thì có gạch chéo. */
+function EyeIcon({ open }: { open: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
+      <circle cx="12" cy="12" r="3" />
+      {!open && <path d="M3 3l18 18" />}
+    </svg>
+  )
+}
+
 export function StudyPage() {
   const { settings, toggle, update } = useSettings()
   const direction = settings.studyDirection
@@ -100,9 +120,10 @@ function StudySession({
             onClick={onToggleCaseCount}
             aria-pressed={showCaseCount}
             title={`Ẩn số ${copy.unit} để luyện nâng cao`}
-            className="rounded-lg border border-slate-300 px-2.5 py-1 font-medium hover:border-sky-500 hover:text-sky-600 dark:border-slate-600"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 py-1 font-medium hover:border-sky-500 hover:text-sky-600 dark:border-slate-600"
           >
-            {showCaseCount ? `👁 hiện số ${copy.unit}` : `🙈 ẩn số ${copy.unit}`}
+            <EyeIcon open={showCaseCount} />
+            {showCaseCount ? `hiện số ${copy.unit}` : `ẩn số ${copy.unit}`}
           </button>
           <span>
             còn {session.remaining} · đã ôn {session.reviewed}

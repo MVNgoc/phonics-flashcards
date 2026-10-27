@@ -27,7 +27,7 @@ const chipBtn =
 const label = (p: Phoneme) => p.note || '(chưa đặt nhãn)'
 
 const input =
-  'w-full rounded-lg border border-slate-600 bg-slate-950/80 px-4 py-2.5 text-lg focus:border-sky-500 focus:shadow-[0_0_14px_rgb(0_240_255/0.35)] focus:outline-none'
+  'w-full border-0 border-b-2 border-slate-900 bg-transparent px-1 py-2.5 text-lg focus:border-sky-600 focus:outline-none'
 
 function Example({ word, spelling }: { word: string; spelling: string }) {
   return (

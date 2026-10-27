@@ -7,7 +7,7 @@ import { deckProgress, reverseDeck } from '../lib/deck'
 function Tile({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="cp-panel p-4">
-      <div className="cp-neon font-mono text-3xl font-bold">{value}</div>
+      <div className="cp-neon text-4xl font-semibold tabular-nums">{value}</div>
       <div className="text-sm text-slate-500 dark:text-slate-400">{label}</div>
     </div>
   )
@@ -46,7 +46,7 @@ export function StatsPage() {
       </div>
 
       <section>
-        <h2 className="mb-3 font-semibold">Top 5 trường hợp sai nhiều nhất</h2>
+        <h2 className="mb-3 border-b border-slate-900 pb-1 font-display text-xl font-semibold">Top 5 trường hợp sai nhiều nhất</h2>
         {stats.worst.length === 0 ? (
           <p className="text-sm text-slate-500 dark:text-slate-400">Chưa có lần sai nào.</p>
         ) : (
@@ -61,7 +61,7 @@ export function StatsPage() {
                 </span>
                 <span className="h-5 flex-1 overflow-hidden rounded bg-slate-100 dark:bg-slate-800">
                   <span
-                    className="block h-full rounded bg-rose-500 shadow-[0_0_10px_rgb(255_42_109/0.6)]"
+                    className="block h-full rounded bg-rose-500"
                     style={{ width: `${(w.wrongCount / maxWrong) * 100}%` }}
                   />
                 </span>
