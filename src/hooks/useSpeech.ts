@@ -4,12 +4,12 @@ const supported = typeof window !== 'undefined' && 'speechSynthesis' in window
 
 const isBritish = (v: SpeechSynthesisVoice) => v.lang.replace('_', '-').toLowerCase().startsWith('en-gb')
 
-/** Giọng đời cũ (Eloquence) và giọng vui của macOS: âm cuối mờ, không dùng để luyện nghe. */
+/** Giọng đời cũ (Eloquence) và giọng vui của macOS: âm cuối mờ, xếp cuối danh sách. */
 const POOR =
   /^(eddy|flo|grandma|grandpa|reed|rocko|sandy|shelley|albert|bad news|bahh|bells|boing|bubbles|cellos|fred|good news|jester|junior|kathy|organ|ralph|superstar|trinoids|whisper|wobble|zarvox)\b/i
 
 /**
- * Thứ tự ưu tiên, khớp với tên + voiceURI. Giọng tốt nhất tuỳ trình duyệt: Edge có
+ * Thứ tự gợi ý, khớp với tên + voiceURI. Giọng tốt nhất tuỳ trình duyệt: Edge có
  * giọng AI của Microsoft, Chrome có giọng online của Google, Safari dùng giọng
  * Premium/Enhanced nếu đã tải trong cài đặt macOS.
  */
@@ -23,40 +23,43 @@ const PREFERRED: RegExp[] = [
   /^daniel\b/i,
 ]
 
+/** Giọng tốt xếp trước, giọng đời cũ xếp cuối. */
 const rank = (v: SpeechSynthesisVoice) => {
+  if (POOR.test(v.name)) return PREFERRED.length + 1
   const key = `${v.name} ${v.voiceURI}`
   const i = PREFERRED.findIndex((re) => re.test(key))
   return i === -1 ? PREFERRED.length : i
 }
 
 /**
- * Chỉ dùng một giọng: giọng Anh-Anh (en-GB) tốt nhất máy có, vì app học tiếng
- * Anh-Anh. Máy không có giọng en-GB nào thì mới lấy giọng tiếng Anh khác.
+ * Giọng cho chọn: chỉ giọng Anh-Anh (en-GB), vì app học tiếng Anh-Anh; máy không có
+ * giọng en-GB nào thì mới đưa các giọng tiếng Anh khác ra. Giọng tốt nhất đứng đầu.
  */
-function bestVoice(): SpeechSynthesisVoice | null {
-  if (!supported) return null
+function britishVoices(): SpeechSynthesisVoice[] {
+  if (!supported) return []
   const all = speechSynthesis.getVoices()
   const british = all.filter(isBritish)
-  const pool = british.length ? british : all.filter((v) => v.lang.toLowerCase().startsWith('en'))
-  const good = pool.filter((v) => !POOR.test(v.name))
-  const list = good.length ? good : pool
-  return [...list].sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name))[0] ?? null
+  const list = british.length ? british : all.filter((v) => v.lang.toLowerCase().startsWith('en'))
+  return [...list].sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name))
 }
 
 /**
  * Đọc từ bằng Web Speech API có sẵn trong trình duyệt (miễn phí). Danh sách giọng
- * nạp bất đồng bộ nên lắng nghe `voiceschanged`.
+ * nạp bất đồng bộ nên lắng nghe `voiceschanged`. `voiceURI` rỗng hoặc không còn
+ * trong danh sách → giọng tốt nhất.
  */
-export function useSpeech() {
-  const [voice, setVoice] = useState<SpeechSynthesisVoice | null>(bestVoice)
+export function useSpeech(voiceURI: string) {
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>(britishVoices)
 
   useEffect(() => {
     if (!supported) return
-    const update = () => setVoice(bestVoice())
+    const update = () => setVoices(britishVoices())
     speechSynthesis.addEventListener('voiceschanged', update)
     update()
     return () => speechSynthesis.removeEventListener('voiceschanged', update)
   }, [])
+
+  const voice = voices.find((v) => v.voiceURI === voiceURI) ?? voices[0] ?? null
 
   const speak = useCallback(
     (text: string, rate = 1) => {
@@ -72,7 +75,7 @@ export function useSpeech() {
   )
 
   /** false khi máy không có giọng en-GB nào, đang dùng tạm giọng tiếng Anh khác. */
-  const hasBritish = voice ? isBritish(voice) : false
+  const hasBritish = voices.some(isBritish)
 
-  return { supported, voice, speak, hasBritish }
+  return { supported, voices, voice, speak, hasBritish }
 }

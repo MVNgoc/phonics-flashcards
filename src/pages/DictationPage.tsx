@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useSettings } from '../hooks/useSettings'
 import { useSpeech } from '../hooks/useSpeech'
 import { useStore } from '../hooks/useStore'
 import {
@@ -47,7 +48,8 @@ const ghostButton =
 
 export function DictationPage() {
   const { data, addExtraAnswer, removeExtraAnswer } = useStore()
-  const speech = useSpeech()
+  const { settings, update } = useSettings()
+  const speech = useSpeech(settings.dictationVoice)
   const [source, setSource] = useState<{ prons: Prons; practice: string[] } | null>(null)
   const [loadError, setLoadError] = useState(false)
   const [meanings, setMeanings] = useState<Meanings | null>(null)
@@ -131,13 +133,19 @@ export function DictationPage() {
           ))}
         </select>
         <span className="flex shrink-0 flex-wrap items-center gap-3">
-          {speech.voice && (
-            <span
-              title="Giọng đọc tự chọn. Mở bằng Microsoft Edge để có giọng Anh-Anh rõ nhất."
-              className="text-xs text-slate-500"
+          {speech.voices.length > 0 && (
+            <select
+              value={speech.voice?.voiceURI ?? ''}
+              onChange={(e) => update({ dictationVoice: e.target.value })}
+              title="Giọng đọc (giọng gợi ý đứng đầu)"
+              className="max-w-[14rem] rounded-lg border border-slate-300 bg-transparent px-2 py-1 dark:border-slate-600"
             >
-              Giọng: {speech.voice.name}
-            </span>
+              {speech.voices.map((v) => (
+                <option key={v.voiceURI} value={v.voiceURI}>
+                  {v.name}
+                </option>
+              ))}
+            </select>
           )}
           {queue && (
             <span>
@@ -147,7 +155,7 @@ export function DictationPage() {
         </span>
       </div>
 
-      {speech.voice && !speech.hasBritish && (
+      {speech.voices.length > 0 && !speech.hasBritish && (
         <p className="rounded-lg border border-amber-500/50 p-3 text-sm text-amber-700">
           Máy chưa có giọng Anh-Anh (en-GB) nên đang đọc bằng giọng tiếng Anh khác. Cài thêm giọng English (UK)
           trong cài đặt giọng nói của hệ điều hành rồi tải lại trang.

@@ -339,11 +339,11 @@ Progress bar hiện ở đầu `/study` (theo chiều đang học) và ở `/sta
 ## Trang Nghe — phân tích âm một từ
 
 `/dictation`. App học **tiếng Anh-Anh**: giọng đọc, phát âm làm đáp án và chính tả
-của từ luyện đều theo Anh-Anh. App đọc một từ (Web Speech API của trình duyệt, tự
-chọn một giọng en-GB tốt nhất máy có: giọng AI Microsoft trên Edge → Google UK English
-trên Chrome → giọng Premium/Enhanced của macOS → Daniel; máy không có giọng en-GB nào
-thì dùng tạm giọng tiếng Anh khác và hiện cảnh báo), bạn gõ **phân tích âm** + **chỗ
-nhấn** + **từ gốc**:
+của từ luyện đều theo Anh-Anh. App đọc một từ (Web Speech API của trình duyệt, chỉ
+cho chọn giọng en-GB, giọng gợi ý đứng đầu và được chọn sẵn: giọng AI Microsoft trên
+Edge → Google UK English trên Chrome → giọng Premium/Enhanced của macOS → Daniel; máy
+không có giọng en-GB nào thì dùng tạm giọng tiếng Anh khác và hiện cảnh báo), bạn gõ
+**phân tích âm** + **chỗ nhấn** + **từ gốc**:
 
 ```
 '/d/or/./t/ur/        hoặc        'd or . t ur        → daughter
