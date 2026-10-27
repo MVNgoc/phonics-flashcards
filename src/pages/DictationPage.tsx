@@ -22,8 +22,14 @@ import { SPELLING_TIPS, TIPS_SOURCE, tipStats, tipsFor, type TipStats } from '..
 // ?url: file JSON thô có hash, tải bằng fetch — nhỏ hơn và parse nhanh hơn để Vite biến thành module JS.
 import pronunciationsUrl from '../data/pronunciations.json?url'
 import practiceWordsUrl from '../data/practiceWords.json?url'
+import meaningsUrl from '../data/meanings.json?url'
 
 type Prons = Record<string, string[]>
+/** Nghĩa tiếng Việt theo từ loại; `of` khi từ là dạng chia ("Số nhiều của boundary"). */
+type Meaning = { pos: string; senses: string[]; of?: string }
+type Meanings = Record<string, Meaning[]>
+
+const MEANINGS_SOURCE = 'https://vi.wiktionary.org/'
 
 async function fetchJson<T>(url: string): Promise<T> {
   const res = await fetch(url)
@@ -44,12 +50,17 @@ export function DictationPage() {
   const speech = useSpeech()
   const [source, setSource] = useState<{ prons: Prons; practice: string[] } | null>(null)
   const [loadError, setLoadError] = useState(false)
+  const [meanings, setMeanings] = useState<Meanings | null>(null)
 
   // Từ điển phát âm (~115KB gzip) + từ luyện thêm (~30KB gzip), chỉ tải khi mở trang này.
   useEffect(() => {
     Promise.all([fetchJson<Prons>(pronunciationsUrl), fetchJson<string[]>(practiceWordsUrl)])
       .then(([prons, practice]) => setSource({ prons, practice }))
       .catch(() => setLoadError(true))
+    // Nghĩa (~600KB gzip) tải riêng: lỗi thì chỉ không hiện nghĩa, vẫn luyện được.
+    fetchJson<Meanings>(meaningsUrl)
+      .then(setMeanings)
+      .catch((err) => console.error('Không tải được nghĩa', err))
   }, [])
 
   // Căn ~10k từ mất cỡ nửa giây: chỉ làm lại khi bảng âm đổi. Thêm đáp án riêng thì
@@ -159,6 +170,7 @@ export function DictationPage() {
         <DictationCard
           key={`${pos}-${item.word}`}
           item={item}
+          meanings={meanings?.[item.word]}
           nuclei={nuclei}
           labels={labels}
           speak={speech.speak}
@@ -264,6 +276,7 @@ function inputStressedSyllable(input: ParsedInput, nuclei: Set<string>): number 
 
 function DictationCard({
   item,
+  meanings,
   nuclei,
   labels,
   speak,
@@ -274,6 +287,7 @@ function DictationCard({
   tipStats,
 }: {
   item: DictationItem
+  meanings?: Meaning[]
   nuclei: Set<string>
   labels: Map<string, string>
   speak: (text: string, rate?: number) => void
@@ -385,6 +399,7 @@ function DictationCard({
         <div className="cp-neon text-4xl font-bold md:text-5xl">{item.word}</div>
       </div>
       {listen}
+      {meanings && <MeaningView meanings={meanings} />}
 
       <ul className="mx-auto max-w-md space-y-1.5 text-sm">
         <ResultRow ok={grade.sounds} label="Âm" />
@@ -510,6 +525,33 @@ function TipsSection({ item, stats }: { item: DictationItem; stats: Map<string, 
           </div>
         )
       })}
+    </section>
+  )
+}
+
+/** Nghĩa tiếng Việt của từ, mỗi từ loại một dòng. */
+function MeaningView({ meanings }: { meanings: Meaning[] }) {
+  const notes = [...new Set(meanings.map((m) => m.of).filter(Boolean))]
+  // Mọi dòng cùng là dạng chia của một từ thì ghi chú một lần ở trên.
+  const shared = notes.length === 1 && meanings.every((m) => m.of) ? notes[0] : undefined
+  return (
+    <section className="mx-auto max-w-md space-y-1.5 text-sm">
+      {shared && <p className="text-xs text-slate-500 dark:text-slate-400">{shared}</p>}
+      {meanings.map((m) => (
+        <p key={m.pos}>
+          <span className="italic text-slate-500 dark:text-slate-400">{m.pos}</span>
+          {m.of && !shared && <span className="text-xs text-slate-400"> ({m.of})</span>}
+          {': '}
+          {m.senses.join(' · ')}
+        </p>
+      ))}
+      <p className="text-xs text-slate-400">
+        Nghĩa:{' '}
+        <a href={MEANINGS_SOURCE} target="_blank" rel="noreferrer" className="underline hover:text-rose-500">
+          Wiktionary tiếng Việt
+        </a>{' '}
+        (CC BY-SA)
+      </p>
     </section>
   )
 }

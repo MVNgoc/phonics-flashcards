@@ -49,6 +49,7 @@ có data mới.
 npm run typecheck   # tsc --noEmit
 npm test            # unit test cho sm2, deck, lookup, storage, seed, dictation, spellingTips (143 test)
 npm run build:pron  # sinh lại src/data/*.json cho trang Nghe (cần mạng, xem Trang Nghe)
+npm run build:meanings  # sinh lại src/data/meanings.json (nghĩa tiếng Việt, chạy sau build:pron)
 npm run test:watch  # vitest watch mode
 npm run build       # typecheck + build ra dist/
 npm run preview     # xem thử bản build
@@ -338,9 +339,11 @@ Progress bar hiện ở đầu `/study` (theo chiều đang học) và ở `/sta
 ## Trang Nghe — phân tích âm một từ
 
 `/dictation`. App học **tiếng Anh-Anh**: giọng đọc, phát âm làm đáp án và chính tả
-của từ luyện đều theo Anh-Anh. App đọc một từ (Web Speech API của trình duyệt, chỉ
-cho chọn giọng en-GB; máy không có giọng en-GB nào thì dùng tạm giọng tiếng Anh khác
-và hiện cảnh báo), bạn gõ **phân tích âm** + **chỗ nhấn** + **từ gốc**:
+của từ luyện đều theo Anh-Anh. App đọc một từ (Web Speech API của trình duyệt, tự
+chọn một giọng en-GB tốt nhất máy có: giọng AI Microsoft trên Edge → Google UK English
+trên Chrome → giọng Premium/Enhanced của macOS → Daniel; máy không có giọng en-GB nào
+thì dùng tạm giọng tiếng Anh khác và hiện cảnh báo), bạn gõ **phân tích âm** + **chỗ
+nhấn** + **từ gốc**:
 
 ```
 '/d/or/./t/ur/        hoặc        'd or . t ur        → daughter
@@ -364,7 +367,9 @@ và hiện cảnh báo), bạn gõ **phân tích âm** + **chỗ nhấn** + **t�
 biệt hoa thường). **Vị trí dấu chấm không chấm**: ranh giới âm tiết không có đáp án
 duy nhất (`audacity` chia `/d/a/s/./i/t/` hay `/d/a/./s/i/t/` đều có từ điển ghi).
 Bảng kết quả tô xanh / đỏ từng âm bạn gõ so với đáp án gần nhất, và hiện đáp án
-theo âm tiết với **cụm chữ tạo ra từng âm** bên dưới (`d·augh·t·er`).
+theo âm tiết với **cụm chữ tạo ra từng âm** bên dưới (`d·augh·t·er`). Dưới từ có
+**nghĩa tiếng Việt** theo từ loại (`src/data/meanings.json`, xem
+[Đáp án lấy từ đâu](#đáp-án-lấy-từ-đâu)).
 
 Đây là luyện tự do: không có lịch ôn, không ghi tiến độ.
 
@@ -420,6 +425,13 @@ Không soạn tay. Đáp án suy ra từ **chính bảng âm của bạn** + ph�
    bảng** sao cho đọc ra đúng phát âm đó: `daughter` + `d ˈɔː t ə` → `d·augh·t·er`.
    Nhãn âm ↔ âm IPA nối với nhau qua bảng `LABEL_SOUNDS` — **đổi tên nhãn ở
    /manage thì phải đổi ở đó**.
+
+Nghĩa tiếng Việt (`src/data/meanings.json`) lấy từ mục từ tiếng Anh của
+[Wiktionary tiếng Việt](https://vi.wiktionary.org/) (CC BY-SA, bản trích xuất của
+[kaikki.org](https://kaikki.org/viwiktionary/)), mỗi từ loại 3 nghĩa đầu. Dạng chia
+(*boundaries, stopped*) lấy nghĩa của từ gốc kèm ghi chú "Số nhiều của boundary". Sinh
+bằng `npm run build:meanings` (`scripts/build-meanings.ts`, chạy sau `build:pron`, cần
+mạng để tải ~115MB); ~98% từ luyện có nghĩa, file chỉ tải khi mở trang Nghe (~600KB gzip).
 
 Hệ quả: sửa bảng ở `/manage` là đáp án đổi theo. Vài quy ước khi cắt:
 
@@ -606,10 +618,12 @@ src/
 │   └── types.ts
 ├── data/
 │   ├── pronunciations.json phát âm giọng Anh (sinh bằng npm run build:pron)
-│   └── practiceWords.json  từ điển thêm vào bộ luyện (cùng script)
+│   ├── practiceWords.json  từ điển thêm vào bộ luyện (cùng script)
+│   └── meanings.json       nghĩa tiếng Việt (sinh bằng npm run build:meanings)
 └── pages/                  StudyPage, DictationPage, LookupPage, ManagePage, StatsPage
 scripts/
-└── build-pronunciations.ts tải Britfone + CMU + VarCon, sinh src/data/pronunciations.json + practiceWords.json
+├── build-pronunciations.ts tải Britfone + CMU + VarCon, sinh src/data/pronunciations.json + practiceWords.json
+└── build-meanings.ts       tải Wiktionary tiếng Việt (kaikki.org), sinh src/data/meanings.json
 ```
 
 Stack: Vite + React 18 + TypeScript + Tailwind v3 (`darkMode: 'class'`) +

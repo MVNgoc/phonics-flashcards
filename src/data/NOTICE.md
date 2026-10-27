@@ -1,9 +1,11 @@
 # Nguồn dữ liệu
 
-Hai file trong thư mục này sinh bằng `npm run build:pron` (`scripts/build-pronunciations.ts`).
+`pronunciations.json` và `practiceWords.json` sinh bằng `npm run build:pron` (`scripts/build-pronunciations.ts`).
 
 - `pronunciations.json`: phát âm lấy từ [Britfone](https://github.com/JoseLlarena/Britfone) (MIT) và, cho vài từ ví dụ Britfone không có, từ [CMU Pronouncing Dictionary](https://github.com/cmusphinx/cmudict) (giấy phép kiểu BSD), đã đổi sang IPA kiểu Anh.
 - `practiceWords.json`: danh sách từ chọn từ Britfone; lọc chính tả Anh-Anh bằng [VarCon](http://wordlist.aspell.net/varcon/) và lọc tên riêng bằng `/usr/share/dict/words` — hai nguồn này chỉ dùng lúc sinh file, không nằm trong dữ liệu.
+
+`meanings.json` sinh bằng `npm run build:meanings` (`scripts/build-meanings.ts`): nghĩa tiếng Việt lấy từ mục từ tiếng Anh của [Wiktionary tiếng Việt](https://vi.wiktionary.org/), qua bản trích xuất của [kaikki.org](https://kaikki.org/viwiktionary/) (Tatu Ylonen, Wiktextract). Nội dung Wiktionary theo giấy phép [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) — `meanings.json` là bản rút gọn (mỗi từ loại 3 nghĩa đầu, dạng chia nối nghĩa từ gốc) và cũng theo giấy phép CC BY-SA 4.0.
 
 ## Britfone
 
