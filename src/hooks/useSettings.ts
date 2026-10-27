@@ -7,14 +7,11 @@ export interface Settings {
   showCaseCount: boolean
   /** Chiều học đang chọn ở trang Học, nhớ cho lần sau. */
   studyDirection: Direction
-  /** voiceURI của giọng đọc ở trang Nghe; rỗng = tự chọn giọng en-GB. */
-  dictationVoice: string
 }
 
 export const DEFAULT_SETTINGS: Settings = {
   showCaseCount: true,
   studyDirection: 'forward',
-  dictationVoice: '',
 }
 
 type BooleanKey = { [K in keyof Settings]: Settings[K] extends boolean ? K : never }[keyof Settings]
