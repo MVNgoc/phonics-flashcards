@@ -21,6 +21,31 @@ select {
   caret-color: theme('colors.rose.500');
 }
 
+/*
+ * Mũi tên mặc định của <select> luôn dính sát mép phải, padding không đẩy vào
+ * được, nên thay bằng mũi tên vẽ riêng cách lề đều. Bộ chọn có :not() để thắng
+ * các class px-* của Tailwind, không thì chữ đè lên mũi tên.
+ */
+select:not([multiple]) {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%235c554a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 0.7rem auto;
+  padding-right: 2.25rem;
+}
+
+/* Ô có gợi ý (datalist): thay tam giác đen của Chrome bằng cùng kiểu mũi tên. */
+input[list]::-webkit-calendar-picker-indicator {
+  appearance: none;
+  width: 0.7rem;
+  height: 0.7rem;
+  color: transparent;
+  cursor: pointer;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%235c554a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E")
+    no-repeat center / contain;
+}
+
 ::placeholder {
   color: theme('colors.slate.400');
   opacity: 0.75;

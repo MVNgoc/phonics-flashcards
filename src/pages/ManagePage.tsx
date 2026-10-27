@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { BulkImport } from '../components/BulkImport'
 import { PhonemeManager } from '../components/PhonemeManager'
+import { ScrollTopButton } from '../components/ScrollTopButton'
 import { useStore } from '../hooks/useStore'
 import { exportData, parseImported } from '../lib/storage'
 
@@ -67,6 +68,7 @@ export function ManagePage() {
 
       <BulkImport />
       <PhonemeManager />
+      <ScrollTopButton />
     </div>
   )
 }

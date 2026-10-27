@@ -125,3 +125,30 @@ export function lookupSound(data: AppData, query: string): SoundLookupResult {
   result.related.sort((a, b) => soundKey(a.note ?? '').length - soundKey(b.note ?? '').length)
   return result
 }
+
+// ---------- tìm âm ở trang Quản lý ----------
+
+/**
+ * Lọc âm theo chữ tìm: khớp khi tên âm hoặc một cách viết có chứa chữ tìm.
+ * Gõ có dấu "/" (vd "/igh/") là tìm theo tên âm nên bỏ qua cách viết.
+ * Âm trùng tên đứng đầu, rồi đến âm có tên chứa chữ tìm, cuối cùng là âm chỉ
+ * khớp ở cách viết; trong mỗi nhóm giữ thứ tự data.
+ * Chữ tìm rỗng thì trả lại nguyên danh sách.
+ */
+export function filterPhonemes(phonemes: Phoneme[], query: string): Phoneme[] {
+  const q = soundKey(query)
+  if (!q) return phonemes
+  const nameOnly = query.includes('/')
+  const rank = (p: Phoneme): number => {
+    const key = soundKey(p.note ?? '')
+    if (key && (key === q || soundCore(p.note ?? '') === q)) return 0
+    if (key.includes(q)) return 1
+    if (!nameOnly && p.graphemes.some((g) => spellingKey(g.spelling).includes(q))) return 2
+    return -1
+  }
+  return phonemes
+    .map((p) => ({ p, r: rank(p) }))
+    .filter((x) => x.r >= 0)
+    .sort((a, b) => a.r - b.r)
+    .map((x) => x.p)
+}

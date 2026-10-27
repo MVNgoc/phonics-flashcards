@@ -14,7 +14,8 @@ export interface ParsedPhoneme {
 
 interface Store {
   data: AppData
-  addPhoneme: (type: PhonemeType, note?: string) => void
+  /** Trả về id của âm mới. */
+  addPhoneme: (type: PhonemeType, note?: string) => string
   updatePhoneme: (id: string, patch: Partial<Pick<Phoneme, 'type' | 'note'>>) => void
   deletePhoneme: (id: string) => void
   addGrapheme: (phonemeId: string, spelling: string, examples?: string[]) => void
@@ -52,10 +53,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const addPhoneme = useCallback((type: PhonemeType, note?: string) => {
+    const id = uid()
     setData((d) => ({
       ...d,
-      phonemes: [...d.phonemes, { id: uid(), type, note, graphemes: [] }],
+      phonemes: [...d.phonemes, { id, type, note, graphemes: [] }],
     }))
+    return id
   }, [])
 
   const updatePhoneme = useCallback<Store['updatePhoneme']>(

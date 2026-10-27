@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import type { AppData, PhonemeType } from './types'
 import {
   allSpellingKeys,
+  filterPhonemes,
   highlightExample,
   lookupSound,
   lookupSpelling,
@@ -183,5 +184,43 @@ describe('lookupSound', () => {
   it('chữ tra rỗng hoặc không có thì không ra gì', () => {
     expect(lookupSound(data, ' / ')).toEqual({ exact: [], related: [] })
     expect(lookupSound(data, 'qq')).toEqual({ exact: [], related: [] })
+  })
+})
+
+describe('filterPhonemes', () => {
+  const found = (q: string) => filterPhonemes(data.phonemes, q).map((p) => p.note)
+
+  it('chữ tìm rỗng thì giữ nguyên danh sách', () => {
+    expect(filterPhonemes(data.phonemes, '')).toBe(data.phonemes)
+    expect(filterPhonemes(data.phonemes, ' / ')).toBe(data.phonemes)
+  })
+
+  it('khớp tên âm không cần dấu "/", trùng tên đứng trước tên chứa chữ tìm', () => {
+    expect(found('ks')).toEqual(['/ks/', '/ksh/'])
+    expect(found('/KS/')).toEqual(['/ks/', '/ksh/'])
+  })
+
+  it('gõ có dấu "/" thì chỉ tìm theo tên âm, bỏ qua cách viết', () => {
+    // Không có "/": /ai/ khớp nhờ cách viết "eigh".
+    expect(found('igh')).toEqual(['/igh/', '/ai/'])
+    expect(found('/igh/')).toEqual(['/igh/'])
+    expect(found('/igh')).toEqual(['/igh/'])
+    expect(found('/eigh/')).toEqual([])
+  })
+
+  it('khớp cả cách viết, xếp sau âm khớp tên', () => {
+    // /i/ trùng tên; /ai/, /igh/, /air/ có "i" trong tên; /ksh/ chỉ khớp ở cách viết "xi".
+    expect(found('i')).toEqual(['/i/', '/ai/', '/igh/', '/air/', '/ksh/'])
+    expect(found('ai')).toEqual(['/ai/', '/air/'])
+    expect(found('eigh')).toEqual(['/ai/'])
+  })
+
+  it('cách viết bỏ chú thích trong ngoặc khi so khớp', () => {
+    expect(found('wr')).toEqual(['/r/'])
+    expect(found('câm')).toEqual([])
+  })
+
+  it('không khớp gì thì rỗng', () => {
+    expect(found('qq')).toEqual([])
   })
 })
