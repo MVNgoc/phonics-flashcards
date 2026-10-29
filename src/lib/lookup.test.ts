@@ -197,7 +197,20 @@ describe('filterPhonemes', () => {
 
   it('khớp tên âm không cần dấu "/", trùng tên đứng trước tên chứa chữ tìm', () => {
     expect(found('ks')).toEqual(['/ks/', '/ksh/'])
-    expect(found('/KS/')).toEqual(['/ks/', '/ksh/'])
+    expect(found('/KS')).toEqual(['/ks/', '/ksh/'])
+  })
+
+  it('gõ đủ hai dấu "/" thì chỉ lấy âm trùng tên', () => {
+    expect(found('/KS/')).toEqual(['/ks/'])
+    expect(found('/s/')).toEqual(['/s/'])
+    expect(found('/oo/')).toEqual(['Short /oo/', 'Long /oo/'])
+  })
+
+  it('gõ có dấu "/" thì không khớp chữ "Short", "Long" trong tên âm', () => {
+    // Không có "/" thì "s" vẫn khớp "Short /oo/" như một phần tên.
+    expect(found('/s')).toEqual(['/s/', '/ks/', '/ksh/'])
+    expect(found('/t')).toEqual([])
+    expect(found('/o')).toEqual(['Short /oo/', 'Long /oo/', '/oor/'])
   })
 
   it('gõ có dấu "/" thì chỉ tìm theo tên âm, bỏ qua cách viết', () => {

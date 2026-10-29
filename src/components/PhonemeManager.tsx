@@ -12,7 +12,7 @@ const input =
 const AUTO_OPEN_MAX = 3
 
 const SEARCH_HELP =
-  'Gõ tên âm có dấu "/" (vd /igh/) để chỉ tìm theo tên âm. Không có dấu "/" (vd igh) thì tìm cả tên âm lẫn cách viết, nên ra thêm các âm có cách viết chứa chữ đó (vd /ai/ có eigh).'
+  'Gõ đủ hai dấu "/" (vd /s/) để chỉ ra đúng âm đó. Gõ một dấu "/" (vd /s) thì ra mọi âm có tên chứa chữ đó (/s/, /ks/, /sh/...). Không có dấu "/" (vd igh) thì tìm cả tên âm lẫn cách viết, nên ra thêm các âm có cách viết chứa chữ đó (vd /ai/ có eigh).'
 
 function AddPhonemeForm({ onAdded }: { onAdded: (id: string) => void }) {
   const { addPhoneme } = useStore()

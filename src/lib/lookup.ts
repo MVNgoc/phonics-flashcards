@@ -130,7 +130,9 @@ export function lookupSound(data: AppData, query: string): SoundLookupResult {
 
 /**
  * Lọc âm theo chữ tìm: khớp khi tên âm hoặc một cách viết có chứa chữ tìm.
- * Gõ có dấu "/" (vd "/igh/") là tìm theo tên âm nên bỏ qua cách viết.
+ * Gõ có dấu "/" là tìm theo tên âm nên bỏ qua cách viết, và chỉ so với phần
+ * giữa hai dấu "/" của tên (bỏ chữ "Short", "Long"): gõ đủ hai dấu (vd "/s/")
+ * thì chỉ lấy âm trùng tên, gõ một dấu (vd "/s") thì lấy cả âm có tên chứa chữ tìm.
  * Âm trùng tên đứng đầu, rồi đến âm có tên chứa chữ tìm, cuối cùng là âm chỉ
  * khớp ở cách viết; trong mỗi nhóm giữ thứ tự data.
  * Chữ tìm rỗng thì trả lại nguyên danh sách.
@@ -138,11 +140,14 @@ export function lookupSound(data: AppData, query: string): SoundLookupResult {
 export function filterPhonemes(phonemes: Phoneme[], query: string): Phoneme[] {
   const q = soundKey(query)
   if (!q) return phonemes
-  const nameOnly = query.includes('/')
+  const slashes = query.split('/').length - 1
+  const nameOnly = slashes > 0
   const rank = (p: Phoneme): number => {
     const key = soundKey(p.note ?? '')
-    if (key && (key === q || soundCore(p.note ?? '') === q)) return 0
-    if (key.includes(q)) return 1
+    const core = soundCore(p.note ?? '')
+    if (key && (core === q || (!nameOnly && key === q))) return 0
+    if (slashes >= 2) return -1
+    if ((nameOnly ? core : key).includes(q)) return 1
     if (!nameOnly && p.graphemes.some((g) => spellingKey(g.spelling).includes(q))) return 2
     return -1
   }
