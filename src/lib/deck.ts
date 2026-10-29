@@ -146,6 +146,42 @@ export interface Progress {
  * trường hợp thì trường hợp kém nhất quyết định: chưa thuộc hết thì chỉ là
  * "đang nhớ", và chỉ "đang nhớ" khi mọi trường hợp đều đã trả lời đúng.
  */
+export interface WeakItem {
+  group: string
+  spelling: string
+  /** Số lần sai trong `answered` ngày ôn gần nhất. */
+  wrong: number
+  answered: number
+}
+
+/**
+ * Trường hợp đang yếu theo một chiều, dựa trên `recent` (RECENT_DAYS ngày ôn gần
+ * nhất): sai nhiều hơn đứng trước; bằng nhau thì tỉ lệ sai cao hơn (ôn ít ngày
+ * hơn) đứng trước, rồi đến tổng số lần sai từ trước đến giờ, rồi thứ tự data.
+ */
+export function weakestItems(phonemes: Phoneme[], direction: Direction, limit = 5): WeakItem[] {
+  return phonemes
+    .flatMap((p) =>
+      p.graphemes.map((g) => {
+        const r = reviewOf(g, direction)
+        const recent = r.recent ?? []
+        return {
+          item: {
+            group: p.note ?? '',
+            spelling: g.spelling,
+            wrong: recent.filter((ok) => !ok).length,
+            answered: recent.length,
+          },
+          totalWrong: r.wrongCount,
+        }
+      }),
+    )
+    .filter((x) => x.item.wrong > 0)
+    .sort((a, b) => b.item.wrong - a.item.wrong || a.item.answered - b.item.answered || b.totalWrong - a.totalWrong)
+    .slice(0, limit)
+    .map((x) => x.item)
+}
+
 export function deckProgress(deck: DeckGroup[]): Progress {
   const items = deck.flatMap((g) => g.items)
   const learned = items.filter((i) => i.reviews.every(isLearned)).length

@@ -9,6 +9,11 @@ export interface ReviewState {
   nextDue: string | null
   correctCount: number
   wrongCount: number
+  /**
+   * Đúng (true) / sai (false) của lần trả lời đầu tiên trong mỗi ngày ôn, cũ trước
+   * mới sau, chỉ giữ RECENT_DAYS ngày gần nhất. Dữ liệu cũ chưa có trường này.
+   */
+  recent?: boolean[]
 }
 
 export interface Grapheme {

@@ -7,6 +7,7 @@ import {
   matchAnswer,
   reverseDeck,
   reviewOf,
+  weakestItems,
 } from './deck'
 import { buildGroupQueue, newReviewState } from './sm2'
 
@@ -174,5 +175,50 @@ describe('buildDeckQueue chiều ngược', () => {
     expect(queue).toContain('rev:igh')
     // Chiều xuôi không bị ảnh hưởng.
     expect(buildDeckQueue(forwardDeck(done), TODAY, noShuffle)).toContain('p0')
+  })
+})
+
+describe('weakestItems', () => {
+  const withRecent = (spec: Record<string, boolean[]>, field: 'review' | 'reverseReview', wrongCount = 0) =>
+    phonemes.map((p) => ({
+      ...p,
+      graphemes: p.graphemes.map((g) =>
+        spec[g.id] ? { ...g, [field]: { ...newReviewState(), recent: spec[g.id], wrongCount } } : g,
+      ),
+    }))
+
+  it('xếp theo số lần sai gần đây, bỏ trường hợp không sai lần nào', () => {
+    const data = withRecent(
+      { 'p0-g0': [false, true, true], 'p1-g0': [false, false, true], 'p2-g0': [true, true] },
+      'review',
+    )
+    expect(weakestItems(data, 'forward')).toEqual([
+      { group: '/igh/', spelling: 'igh', wrong: 2, answered: 3 },
+      { group: '/i/', spelling: 'i', wrong: 1, answered: 3 },
+    ])
+  })
+
+  it('bằng số lần sai thì ôn ít ngày hơn (tỉ lệ sai cao hơn) đứng trước', () => {
+    const data = withRecent({ 'p0-g0': [false, true, true, true], 'p1-g0': [false, true] }, 'review')
+    expect(weakestItems(data, 'forward').map((w) => w.spelling)).toEqual(['igh', 'i'])
+  })
+
+  it('mỗi chiều tính riêng', () => {
+    const data = withRecent({ 'p0-g1': [false] }, 'reverseReview')
+    expect(weakestItems(data, 'forward')).toEqual([])
+    expect(weakestItems(data, 'reverse')).toEqual([{ group: '/i/', spelling: 'y', wrong: 1, answered: 1 }])
+  })
+
+  it('chỉ có tổng số lần sai cũ (chưa có recent) thì không tính', () => {
+    const data = phonemes.map((p) => ({
+      ...p,
+      graphemes: p.graphemes.map((g) => ({ ...g, review: { ...g.review, recent: undefined, wrongCount: 9 } })),
+    }))
+    expect(weakestItems(data, 'forward')).toEqual([])
+  })
+
+  it('giới hạn số trường hợp trả về', () => {
+    const all = Object.fromEntries(phonemes.flatMap((p) => p.graphemes.map((g) => [g.id, [false]])))
+    expect(weakestItems(withRecent(all, 'review'), 'forward')).toHaveLength(5)
   })
 })

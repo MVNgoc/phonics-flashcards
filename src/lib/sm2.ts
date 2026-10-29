@@ -59,8 +59,12 @@ export function newReviewState(): ReviewState {
     nextDue: null,
     correctCount: 0,
     wrongCount: 0,
+    recent: [],
   }
 }
+
+/** Số ngày ôn gần nhất giữ lại kết quả, để thống kê trường hợp đang yếu. */
+export const RECENT_DAYS = 10
 
 /** Chặn interval để nextDue không bay đi vài năm (và không tràn ngày hợp lệ). */
 export const MAX_INTERVAL = 365
@@ -74,6 +78,8 @@ export const MAX_INTERVAL = 365
  * interval lên, một trường hợp có thể "đã thuộc" chỉ sau một buổi và nextDue
  * nhảy đi vài năm. Sai thì vẫn tính lại lịch (quên là quên) nhưng ease chỉ bị
  * trừ một lần trong ngày, để luyện nhiều vòng không đẩy ease xuống sàn 1.3.
+ * `recent` cũng chỉ ghi lần trả lời đầu tiên trong ngày, để hỏi lại nhiều vòng
+ * không bị đếm thành nhiều lần sai.
  */
 export function review(state: ReviewState, grade: Grade, today: string): ReviewState {
   const q = grade
@@ -107,6 +113,7 @@ export function review(state: ReviewState, grade: Grade, today: string): ReviewS
     nextDue: addDays(today, interval),
     correctCount: state.correctCount + (q >= 3 ? 1 : 0),
     wrongCount: state.wrongCount + (q >= 3 ? 0 : 1),
+    recent: sameDay ? (state.recent ?? []) : [...(state.recent ?? []), q >= 3].slice(-RECENT_DAYS),
   }
 }
 
@@ -262,7 +269,6 @@ export interface Stats {
   learned: number
   percent: number
   dueToday: number
-  worst: { group: string; spelling: string; wrongCount: number }[]
 }
 
 export function computeStats(phonemes: Phoneme[], today: string): Stats {
@@ -271,21 +277,11 @@ export function computeStats(phonemes: Phoneme[], today: string): Stats {
   )
   const learned = all.filter((x) => isLearned(x.g.review)).length
   const dueToday = all.filter((x) => isDue(x.g.review, today)).length
-  const worst = all
-    .filter((x) => x.g.review.wrongCount > 0)
-    .sort((a, b) => b.g.review.wrongCount - a.g.review.wrongCount)
-    .slice(0, 5)
-    .map((x) => ({
-      group: x.p.note ?? '',
-      spelling: x.g.spelling,
-      wrongCount: x.g.review.wrongCount,
-    }))
 
   return {
     total: all.length,
     learned,
     percent: all.length === 0 ? 0 : Math.round((learned / all.length) * 100),
     dueToday,
-    worst,
   }
 }

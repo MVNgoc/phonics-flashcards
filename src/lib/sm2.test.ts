@@ -9,6 +9,7 @@ import {
   isLearned,
   MAX_INTERVAL,
   newReviewState,
+  RECENT_DAYS,
   normalize,
   review,
 } from './sm2'
@@ -143,6 +144,35 @@ describe('chấm lại trong cùng một ngày', () => {
     let s = first
     for (let i = 0; i < 5; i++) s = review(s, 1, TODAY)
     expect(s.easeFactor).toBeCloseTo(first.easeFactor, 10)
+  })
+})
+
+describe('recent: kết quả các ngày ôn gần nhất', () => {
+  it('ghi đúng/sai của mỗi ngày ôn, cũ trước mới sau', () => {
+    let s = review(state(), 4, TODAY)
+    s = review(s, 1, addDays(TODAY, 1))
+    expect(s.recent).toEqual([true, false])
+  })
+
+  it('chỉ ghi lần trả lời đầu tiên trong ngày', () => {
+    let s = review(state(), 1, TODAY)
+    s = review(s, 1, TODAY)
+    s = review(s, 4, TODAY)
+    expect(s.recent).toEqual([false])
+    expect(s.wrongCount).toBe(2)
+  })
+
+  it(`chỉ giữ ${RECENT_DAYS} ngày gần nhất`, () => {
+    let s = state()
+    for (let i = 0; i <= RECENT_DAYS; i++) s = review(s, i === 0 ? 1 : 4, addDays(TODAY, i * 30))
+    expect(s.recent).toHaveLength(RECENT_DAYS)
+    expect(s.recent).not.toContain(false)
+  })
+
+  it('dữ liệu cũ chưa có recent thì bắt đầu ghi từ lần ôn tới', () => {
+    const { recent, ...old } = state({ wrongCount: 5 })
+    void recent
+    expect(review(old, 1, TODAY).recent).toEqual([false])
   })
 })
 
@@ -382,12 +412,6 @@ describe('computeStats', () => {
 
   it('counts new and due-today cards as due', () => {
     expect(s.dueToday).toBe(2) // g2 (new) + g3 (due today)
-  })
-
-  it('ranks the most-missed graphemes', () => {
-    expect(s.worst.map((w) => w.spelling)).toEqual(['a', 'ai'])
-    expect(s.worst[0].wrongCount).toBe(3)
-    expect(s.worst[0].group).toBe('a ngắn')
   })
 
   it('reports 0% for an empty deck instead of NaN', () => {
