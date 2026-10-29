@@ -334,7 +334,8 @@ Chiều Chữ → Âm tính riêng, đơn vị là **cặp chữ – âm** (mộ
 `deckProgress` trong `deck.ts`). Đáp án gộp từ nhiều trường hợp chỉ "thuộc" khi
 *mọi* trường hợp của nó đều thuộc.
 
-Vì "thuộc" cần ít nhất 3 buổi khác ngày và nhanh nhất ~1 tuần, thanh còn một mức
+Vì "thuộc" cần trả lời đúng 3 lần liền ở 3 ngày khác nhau và nhanh nhất ~5 ngày (ngày 1, 2, rồi
+ngày 5 khi thẻ còn 3 ngày đến hạn đã được đưa vào phiên), thanh còn một mức
 phụ **"đang nhớ"** để thấy tiến bộ sớm hơn:
 
 ```

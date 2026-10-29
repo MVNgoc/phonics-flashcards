@@ -46,19 +46,19 @@ function LevelsHelp() {
         <span className="flex gap-2">
           <span className={`mt-1 h-2 w-3 shrink-0 rounded-full ${LEARNED_COLOR}`} />
           <span>
-            <b>Đã thuộc</b>: trả lời đúng ở ít nhất 3 buổi khác nhau và được hẹn ôn lại sau từ 7 ngày trở
-            lên. Nhanh nhất cũng mất khoảng 1 tuần. Chỉ mức này được tính vào %.
+            <b>Đã thuộc</b>: trả lời đúng 3 lần liền, mỗi lần vào một ngày khác nhau. Lần ôn thứ 3 sớm
+            nhất là 3 ngày sau lần thứ 2, nên nhanh nhất mất khoảng 5 ngày. Chỉ mức này được tính vào %.
           </span>
         </span>
         <span className="flex gap-2">
           <span className={`mt-1 h-2 w-3 shrink-0 rounded-full ${REMEMBERING_COLOR}`} />
           <span>
-            <b>Đang nhớ</b>: lần ôn gần nhất trả lời đúng nhưng chưa đủ để thuộc. Sai một lần là phải đếm
-            lại từ đầu.
+            <b>Đang nhớ</b>: lần trả lời gần nhất là đúng, nhưng chưa đủ 3 ngày để thành “đã thuộc”.
           </span>
         </span>
         <span className="block text-slate-500 dark:text-slate-400">
-          Ôn lại nhiều lần trong cùng một ngày chỉ được tính một lần.
+          Trong cùng một ngày, trả lời đúng bao nhiêu lần cũng chỉ tính là 1 lần. Trả lời sai một lần
+          là đếm lại từ đầu, kể cả khi đã thuộc.
         </span>
       </span>
     </span>
