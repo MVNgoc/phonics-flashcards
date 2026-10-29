@@ -97,6 +97,36 @@ describe('reverseDeck', () => {
   })
 })
 
+describe('deckProgress', () => {
+  const answered = (repetitions: number): ReviewState => ({ ...newReviewState(), repetitions, interval: 6 })
+  const withReviews = (reviews: Record<string, ReviewState>, field: 'review' | 'reverseReview') =>
+    phonemes.map((p) => ({
+      ...p,
+      graphemes: p.graphemes.map((g) => (reviews[g.id] ? { ...g, [field]: reviews[g.id] } : g)),
+    }))
+
+  it('đang nhớ = đã trả lời đúng nhưng chưa thuộc, không tính vào %', () => {
+    const data = withReviews(
+      {
+        'p0-g0': learned(),
+        'p0-g1': answered(1),
+        'p1-g0': answered(2),
+        'p1-g1': { ...answered(0), wrongCount: 1 }, // vừa sai -> về 0, không còn "đang nhớ"
+      },
+      'review',
+    )
+    expect(deckProgress(forwardDeck(data))).toEqual({ total: 11, learned: 1, remembering: 2, percent: 9 })
+  })
+
+  it('đáp án gộp chỉ "đang nhớ" khi mọi trường hợp đều đã trả lời đúng', () => {
+    const ce = (second: ReviewState) =>
+      deckProgress(reverseDeck(withReviews({ 'p4-g0': learned(), 'p4-g1': second }, 'reverseReview')))
+    expect(ce(answered(1))).toMatchObject({ learned: 0, remembering: 1 })
+    expect(ce(answered(0))).toMatchObject({ learned: 0, remembering: 0 })
+    expect(ce(learned())).toMatchObject({ learned: 1, remembering: 0 })
+  })
+})
+
 describe('matchAnswer', () => {
   const fwd = forwardDeck(phonemes)
   const rev = reverseDeck(phonemes)

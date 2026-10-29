@@ -334,6 +334,18 @@ Chiều Chữ → Âm tính riêng, đơn vị là **cặp chữ – âm** (mộ
 `deckProgress` trong `deck.ts`). Đáp án gộp từ nhiều trường hợp chỉ "thuộc" khi
 *mọi* trường hợp của nó đều thuộc.
 
+Vì "thuộc" cần ít nhất 3 buổi khác ngày và nhanh nhất ~1 tuần, thanh còn một mức
+phụ **"đang nhớ"** để thấy tiến bộ sớm hơn:
+
+```
+"đang nhớ" = repetitions >= 1  VÀ  chưa "thuộc"     // lần ôn gần nhất trả lời đúng
+```
+
+Mức này vẽ thành đoạn nhạt nối sau đoạn "thuộc" và **không** tính vào %. Sai một
+lần thì `repetitions = 0` nên rơi khỏi mức này. Đáp án gộp chỉ "đang nhớ" khi mọi
+trường hợp của nó đều đã trả lời đúng. Nút `?` cạnh nhãn mở tooltip giải thích
+hai mức (rê chuột hoặc bấm).
+
 Progress bar hiện ở đầu `/study` (theo chiều đang học) và ở `/stats` (cả hai chiều).
 
 ## Trang Nghe — phân tích âm một từ

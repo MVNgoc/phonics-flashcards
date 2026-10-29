@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { ProgressBar } from '../components/ProgressBar'
 import { useStore } from '../hooks/useStore'
 import { computeStats, todayISO } from '../lib/sm2'
-import { deckProgress, reverseDeck } from '../lib/deck'
+import { deckProgress, forwardDeck, reverseDeck } from '../lib/deck'
 
 function Tile({ label, value }: { label: string; value: string | number }) {
   return (
@@ -17,6 +17,7 @@ export function StatsPage() {
   const { data } = useStore()
   const today = todayISO()
   const stats = useMemo(() => computeStats(data.phonemes, today), [data.phonemes, today])
+  const forward = useMemo(() => deckProgress(forwardDeck(data.phonemes)), [data.phonemes])
   const reverse = useMemo(() => deckProgress(reverseDeck(data.phonemes)), [data.phonemes])
   const maxWrong = stats.worst[0]?.wrongCount ?? 1
 
@@ -24,14 +25,16 @@ export function StatsPage() {
     <div className="space-y-6">
       <div className="space-y-3">
         <ProgressBar
-          percent={stats.percent}
-          learned={stats.learned}
-          total={stats.total}
+          percent={forward.percent}
+          learned={forward.learned}
+          remembering={forward.remembering}
+          total={forward.total}
           label="Âm → Chữ: đã thuộc"
         />
         <ProgressBar
           percent={reverse.percent}
           learned={reverse.learned}
+          remembering={reverse.remembering}
           total={reverse.total}
           label="Chữ → Âm: đã thuộc"
           unit="cặp chữ – âm"

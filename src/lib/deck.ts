@@ -136,16 +136,26 @@ export function matchAnswer(group: DeckGroup, text: string, direction: Direction
 export interface Progress {
   total: number
   learned: number
+  /** Đang nhớ nhưng chưa thuộc — không tính vào `percent`. */
+  remembering: number
   percent: number
 }
 
-/** Số đáp án đã thuộc trên tổng số đáp án của cả bộ thẻ. */
+/**
+ * Số đáp án đã thuộc trên tổng số đáp án của cả bộ thẻ. Đáp án gộp từ nhiều
+ * trường hợp thì trường hợp kém nhất quyết định: chưa thuộc hết thì chỉ là
+ * "đang nhớ", và chỉ "đang nhớ" khi mọi trường hợp đều đã trả lời đúng.
+ */
 export function deckProgress(deck: DeckGroup[]): Progress {
   const items = deck.flatMap((g) => g.items)
   const learned = items.filter((i) => i.reviews.every(isLearned)).length
+  const remembering = items.filter(
+    (i) => !i.reviews.every(isLearned) && i.reviews.every((r) => r.repetitions >= 1),
+  ).length
   return {
     total: items.length,
     learned,
+    remembering,
     percent: items.length === 0 ? 0 : Math.round((learned / items.length) * 100),
   }
 }

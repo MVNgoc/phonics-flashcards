@@ -107,6 +107,7 @@ function StudySession({
       <ProgressBar
         percent={stats.percent}
         learned={stats.learned}
+        remembering={stats.remembering}
         total={stats.total}
         label={copy.progressLabel}
         unit={copy.progressUnit}
