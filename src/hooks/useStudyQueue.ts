@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { gradeFromTyping, normalize, todayISO, type Grade } from '../lib/sm2'
 import {
   buildDeck,
   buildDeckQueue,
+  countQueueItems,
   matchAnswer,
   type DeckGroup,
   type DeckItem,
@@ -58,19 +59,39 @@ interface SessionSnapshot {
  * trong bộ nhớ: reload trang thì bắt đầu phiên mới.
  */
 const sessions: Partial<Record<Direction, SessionSnapshot>> = {}
+/** Đầu trang theo dõi phiên để đếm số đáp án còn lại (xem `useItemsLeftToday`). */
+const sessionListeners = new Set<() => void>()
+
+function subscribeSessions(listener: () => void) {
+  sessionListeners.add(listener)
+  return () => {
+    sessionListeners.delete(listener)
+  }
+}
+
+function saveSession(direction: Direction, snapshot: SessionSnapshot) {
+  sessions[direction] = snapshot
+  for (const l of sessionListeners) l()
+}
+
+/** Hàng đợi đã lưu khớp với bộ thẻ hiện tại: bỏ nhóm đã bị xoá, thêm nhóm mới đến hạn. */
+function syncQueue(saved: string[], deck: DeckGroup[], today: string): string[] {
+  const ids = new Set(deck.map((g) => g.id))
+  const queue = saved.filter((id) => ids.has(id))
+  for (const id of buildDeckQueue(deck, today)) if (!queue.includes(id)) queue.push(id)
+  return queue
+}
 
 /**
- * Lấy lại phiên đã lưu, khớp với bộ thẻ hiện tại: bỏ nhóm đã bị xoá, thêm nhóm
- * mới đến hạn (vd. vừa thêm âm ở trang Quản lý). Nhóm đang học bị sửa thì chỉ
- * giữ những đáp án còn tồn tại; nhóm đang học bị xoá thì bắt đầu lại từ đầu.
+ * Lấy lại phiên đã lưu, khớp với bộ thẻ hiện tại (vd. vừa thêm âm ở trang Quản
+ * lý). Nhóm đang học bị sửa thì chỉ giữ những đáp án còn tồn tại; nhóm đang học
+ * bị xoá thì bắt đầu lại từ đầu.
  */
 function restoreSession(direction: Direction, deck: DeckGroup[], today: string): SessionSnapshot | null {
   const saved = sessions[direction]
   if (!saved || saved.today !== today) return null
 
-  const ids = new Set(deck.map((g) => g.id))
-  const queue = saved.queue.filter((id) => ids.has(id))
-  for (const id of buildDeckQueue(deck, today)) if (!queue.includes(id)) queue.push(id)
+  const queue = syncQueue(saved.queue, deck, today)
 
   const group = deck.find((g) => g.id === saved.queue[0])
   if (!group || queue[0] !== group.id) {
@@ -113,7 +134,7 @@ export function useStudyQueue(direction: Direction = 'forward') {
   const [reviewed, setReviewed] = useState(restored?.reviewed ?? 0)
 
   useEffect(() => {
-    sessions[direction] = { today, queue, phase, pendingId, found, rejected, examplesFound, reviewed }
+    saveSession(direction, { today, queue, phase, pendingId, found, rejected, examplesFound, reviewed })
   }, [direction, today, queue, phase, pendingId, found, rejected, examplesFound, reviewed])
 
   const group: DeckGroup | null = deck.find((g) => g.id === queue[0]) ?? null
@@ -248,6 +269,7 @@ export function useStudyQueue(direction: Direction = 'forward') {
     foundCount: found.length,
     allFound: group ? found.length === group.items.length : false,
     remaining: queue.length,
+    remainingItems: countQueueItems(deck, queue),
     reviewed,
     submitAnswer,
     submitExample,
@@ -258,4 +280,20 @@ export function useStudyQueue(direction: Direction = 'forward') {
     restart,
     today,
   }
+}
+
+/**
+ * Số đáp án còn phải gõ hôm nay ở một chiều — đúng bằng tổng đáp án của các thẻ
+ * trong hàng đợi trang Học. Chưa mở trang Học hôm nay thì đếm theo hàng đợi sẽ
+ * được dựng khi mở.
+ */
+export function useItemsLeftToday(direction: Direction): number {
+  const { data } = useStore()
+  const saved = useSyncExternalStore(subscribeSessions, () => sessions[direction])
+  const today = todayISO()
+  return useMemo(() => {
+    const deck = buildDeck(data.phonemes, direction)
+    const queue = saved?.today === today ? syncQueue(saved.queue, deck, today) : buildDeckQueue(deck, today)
+    return countQueueItems(deck, queue)
+  }, [data.phonemes, direction, saved, today])
 }

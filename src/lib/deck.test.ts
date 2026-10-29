@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import type { AppData, Phoneme, PhonemeType, ReviewState } from './types'
 import {
   buildDeckQueue,
+  countQueueItems,
   deckProgress,
   forwardDeck,
   matchAnswer,
@@ -125,6 +126,19 @@ describe('deckProgress', () => {
     expect(ce(answered(1))).toMatchObject({ learned: 0, remembering: 1 })
     expect(ce(answered(0))).toMatchObject({ learned: 0, remembering: 0 })
     expect(ce(learned())).toMatchObject({ learned: 1, remembering: 0 })
+  })
+})
+
+describe('countQueueItems', () => {
+  it('cộng số đáp án của từng thẻ trong hàng đợi, bỏ id lạ', () => {
+    const deck = forwardDeck(phonemes)
+    expect(countQueueItems(deck, ['p0', 'p4', 'p5', 'gone'])).toBe(5)
+    expect(countQueueItems(deck, [])).toBe(0)
+  })
+
+  it('chiều ngược đếm cặp chữ – âm, hai trường hợp gộp chỉ tính một', () => {
+    const deck = reverseDeck(phonemes)
+    expect(countQueueItems(deck, ['rev:y', 'rev:ce'])).toBe(3)
   })
 })
 

@@ -1,8 +1,18 @@
 import { useMemo } from 'react'
 import { ProgressBar } from '../components/ProgressBar'
+import { useSettings } from '../hooks/useSettings'
 import { useStore } from '../hooks/useStore'
+import { useItemsLeftToday } from '../hooks/useStudyQueue'
 import { computeStats, RECENT_DAYS, todayISO } from '../lib/sm2'
-import { deckProgress, forwardDeck, reverseDeck, weakestItems, type WeakItem } from '../lib/deck'
+import {
+  deckProgress,
+  DIRECTION_LABEL,
+  forwardDeck,
+  ITEM_UNIT,
+  reverseDeck,
+  weakestItems,
+  type WeakItem,
+} from '../lib/deck'
 
 function Tile({ label, value }: { label: string; value: string | number }) {
   return (
@@ -53,6 +63,9 @@ export function StatsPage() {
   const { data } = useStore()
   const today = todayISO()
   const stats = useMemo(() => computeStats(data.phonemes, today), [data.phonemes, today])
+  // Cùng số với đầu trang: đáp án còn trong hàng đợi trang Học của chiều đang học.
+  const direction = useSettings().settings.studyDirection
+  const itemsLeft = useItemsLeftToday(direction)
   const forward = useMemo(() => deckProgress(forwardDeck(data.phonemes)), [data.phonemes])
   const reverse = useMemo(() => deckProgress(reverseDeck(data.phonemes)), [data.phonemes])
   const weakForward = useMemo(() => weakestItems(data.phonemes, 'forward'), [data.phonemes])
@@ -79,7 +92,10 @@ export function StatsPage() {
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Tile label="cần ôn hôm nay" value={stats.dueToday} />
+        <Tile
+          label={`${ITEM_UNIT[direction]} cần ôn hôm nay (${DIRECTION_LABEL[direction]})`}
+          value={itemsLeft}
+        />
         <Tile label="tổng trường hợp" value={stats.total} />
         <Tile label="đã thuộc" value={stats.learned} />
         <Tile label="tiến độ" value={`${stats.percent}%`} />

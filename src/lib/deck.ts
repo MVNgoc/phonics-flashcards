@@ -5,6 +5,17 @@ import { soundCore, soundKey, spellingKey } from './lookup'
 /** forward = cho âm, gõ các cách viết; reverse = cho cách viết, gõ các âm. */
 export type Direction = 'forward' | 'reverse'
 
+export const DIRECTION_LABEL: Record<Direction, string> = {
+  forward: 'Âm → Chữ',
+  reverse: 'Chữ → Âm',
+}
+
+/** Tên gọi một đáp án của thẻ ở mỗi chiều, để đếm số đáp án. */
+export const ITEM_UNIT: Record<Direction, string> = {
+  forward: 'trường hợp',
+  reverse: 'cặp chữ – âm',
+}
+
 /** Trường hợp trong data mà một đáp án ứng với — chấm điểm là chấm vào đây. */
 export interface CardRef {
   phonemeId: string
@@ -112,6 +123,12 @@ export function buildDeckQueue(
     rng,
     options,
   )
+}
+
+/** Tổng số đáp án của các thẻ trong hàng đợi; id không còn trong bộ thẻ thì bỏ qua. */
+export function countQueueItems(deck: DeckGroup[], queue: string[]): number {
+  const sizes = new Map(deck.map((g) => [g.id, g.items.length]))
+  return queue.reduce((n, id) => n + (sizes.get(id) ?? 0), 0)
 }
 
 /**

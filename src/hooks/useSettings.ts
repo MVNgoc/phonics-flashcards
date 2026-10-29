@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useSyncExternalStore } from 'react'
 import type { Direction } from '../lib/deck'
 import { SETTINGS_KEY } from '../lib/storage'
 
@@ -29,17 +29,33 @@ function initialSettings(): Settings {
   }
 }
 
+/**
+ * Một bản tuỳ chọn dùng chung cho mọi component: đổi chiều học ở trang Học thì
+ * đầu trang cũng đổi theo ngay.
+ */
+let current: Settings = initialSettings()
+const listeners = new Set<() => void>()
+
+function subscribe(listener: () => void) {
+  listeners.add(listener)
+  return () => {
+    listeners.delete(listener)
+  }
+}
+
+function setSettings(next: (s: Settings) => Settings) {
+  current = next(current)
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(current))
+  } catch (err) {
+    console.error('Không lưu được tuỳ chọn', err)
+  }
+  for (const l of listeners) l()
+}
+
 /** Tuỳ chọn luyện tập, giữ riêng ở localStorage — không nằm trong dữ liệu âm. */
 export function useSettings() {
-  const [settings, setSettings] = useState<Settings>(initialSettings)
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings))
-    } catch (err) {
-      console.error('Không lưu được tuỳ chọn', err)
-    }
-  }, [settings])
+  const settings = useSyncExternalStore(subscribe, () => current)
 
   const toggle = useCallback((key: BooleanKey) => {
     setSettings((s) => ({ ...s, [key]: !s[key] }))

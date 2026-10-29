@@ -1,7 +1,9 @@
-import { Fragment, useMemo } from 'react'
+import { Fragment } from 'react'
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom'
-import { StoreProvider, useStore } from './hooks/useStore'
-import { computeStats, todayISO } from './lib/sm2'
+import { StoreProvider } from './hooks/useStore'
+import { useSettings } from './hooks/useSettings'
+import { useItemsLeftToday } from './hooks/useStudyQueue'
+import { DIRECTION_LABEL, ITEM_UNIT } from './lib/deck'
 import { StudyPage } from './pages/StudyPage'
 import { LookupPage } from './pages/LookupPage'
 import { DictationPage } from './pages/DictationPage'
@@ -45,17 +47,21 @@ export default function App() {
   )
 }
 
-/** Đầu trang kiểu tờ báo: dòng ngày + số cần ôn, tên app ở giữa, menu kẹp giữa hai đường kẻ đôi. */
+/**
+ * Đầu trang kiểu tờ báo: dòng ngày + số cần ôn của chiều đang học (khớp hàng đợi
+ * trang Học), tên app ở giữa, menu kẹp giữa hai đường kẻ đôi.
+ */
 function Masthead() {
-  const { data } = useStore()
-  const today = todayISO()
-  const dueToday = useMemo(() => computeStats(data.phonemes, today).dueToday, [data.phonemes, today])
+  const direction = useSettings().settings.studyDirection
+  const itemsLeft = useItemsLeftToday(direction)
 
   return (
     <header className="mx-auto max-w-3xl px-4 pt-5">
       <div className="flex flex-wrap justify-between gap-x-4 border-b border-slate-900 pb-1.5 text-[11px] uppercase tracking-[0.16em] text-slate-500">
         <span>{DATE_FORMAT.format(new Date())}</span>
-        <span>Cần ôn hôm nay: {dueToday} trường hợp</span>
+        <span>
+          Cần ôn hôm nay ({DIRECTION_LABEL[direction]}): {itemsLeft} {ITEM_UNIT[direction]}
+        </span>
       </div>
       <div className="py-3 text-center font-display text-4xl font-black tracking-tight sm:py-4 sm:text-5xl">
         The Phonics Review

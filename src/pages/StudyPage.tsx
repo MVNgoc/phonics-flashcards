@@ -4,12 +4,12 @@ import { TypingCard } from '../components/TypingCard'
 import { useSettings } from '../hooks/useSettings'
 import { useStore } from '../hooks/useStore'
 import { useStudyQueue } from '../hooks/useStudyQueue'
-import { buildDeck, deckProgress, type Direction } from '../lib/deck'
+import { buildDeck, deckProgress, DIRECTION_LABEL, ITEM_UNIT, type Direction } from '../lib/deck'
 
-const DIRECTIONS: { value: Direction; label: string }[] = [
-  { value: 'forward', label: 'Âm → Chữ' },
-  { value: 'reverse', label: 'Chữ → Âm' },
-]
+const DIRECTIONS: { value: Direction; label: string }[] = (['forward', 'reverse'] as const).map((value) => ({
+  value,
+  label: DIRECTION_LABEL[value],
+}))
 
 /** Câu chữ khác nhau giữa hai chiều học. */
 const COPY: Record<
@@ -126,8 +126,9 @@ function StudySession({
             <EyeIcon open={showCaseCount} />
             {showCaseCount ? `hiện số ${copy.unit}` : `ẩn số ${copy.unit}`}
           </button>
-          <span>
-            còn {session.remaining} · đã ôn {session.reviewed}
+          <span title="Thẻ chưa đạt Tốt hết sẽ được hỏi lại ở cuối hàng, nên mỗi lần chấm lại vẫn tính thêm một lượt">
+            còn {session.remaining} thẻ ({session.remainingItems} {ITEM_UNIT[direction]}) · đã chấm{' '}
+            {session.reviewed} lượt
           </span>
         </span>
       </div>
