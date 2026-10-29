@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { gradeFromTyping, normalize, todayISO, type Grade } from '../lib/sm2'
 import {
   buildDeck,
@@ -40,6 +40,51 @@ function isGroupDone(
   )
 }
 
+/** Trạng thái một phiên học, đủ để dựng lại đúng thẻ đang gõ dở. */
+interface SessionSnapshot {
+  today: string
+  queue: string[]
+  phase: Phase
+  pendingId: string | null
+  found: string[]
+  rejected: string[]
+  examplesFound: Record<string, string[]>
+  reviewed: number
+}
+
+/**
+ * Phiên đang học của từng chiều. Sang trang khác thì StudyPage unmount, giữ ở
+ * đây để quay lại vẫn đúng thẻ đang học thay vì xáo hàng đợi mới. Chỉ sống
+ * trong bộ nhớ: reload trang thì bắt đầu phiên mới.
+ */
+const sessions: Partial<Record<Direction, SessionSnapshot>> = {}
+
+/**
+ * Lấy lại phiên đã lưu, khớp với bộ thẻ hiện tại: bỏ nhóm đã bị xoá, thêm nhóm
+ * mới đến hạn (vd. vừa thêm âm ở trang Quản lý). Nhóm đang học bị sửa thì chỉ
+ * giữ những đáp án còn tồn tại; nhóm đang học bị xoá thì bắt đầu lại từ đầu.
+ */
+function restoreSession(direction: Direction, deck: DeckGroup[], today: string): SessionSnapshot | null {
+  const saved = sessions[direction]
+  if (!saved || saved.today !== today) return null
+
+  const ids = new Set(deck.map((g) => g.id))
+  const queue = saved.queue.filter((id) => ids.has(id))
+  for (const id of buildDeckQueue(deck, today)) if (!queue.includes(id)) queue.push(id)
+
+  const group = deck.find((g) => g.id === saved.queue[0])
+  if (!group || queue[0] !== group.id) {
+    return { ...saved, queue, phase: 'answer', pendingId: null, found: [], rejected: [], examplesFound: {} }
+  }
+  const itemIds = new Set(group.items.map((i) => i.id))
+  return {
+    ...saved,
+    queue,
+    pendingId: saved.pendingId && itemIds.has(saved.pendingId) ? saved.pendingId : null,
+    found: saved.found.filter((id) => itemIds.has(id)),
+  }
+}
+
 /**
  * Một phiên học. Đơn vị là một thẻ (một âm ở chiều xuôi, một cách viết ở chiều
  * ngược) và luồng gõ xen kẽ: gõ đúng một đáp án -> hỏi ngay ví dụ cho đúng đáp
@@ -48,20 +93,28 @@ function isGroupDone(
  * đáp án. Điểm suy ra từ những gì đã gõ.
  *
  * Đổi chiều học thì mount lại hook (StudyPage đặt `key`), không đổi giữa chừng.
+ * Mỗi chiều giữ phiên riêng (xem `sessions`), quay lại chiều cũ vẫn đúng thẻ cũ.
  */
 export function useStudyQueue(direction: Direction = 'forward') {
   const { data, gradeCard } = useStore()
   const today = useMemo(() => todayISO(), [])
   const deck = useMemo(() => buildDeck(data.phonemes, direction), [data.phonemes, direction])
 
-  const [queue, setQueue] = useState<string[]>(() => buildDeckQueue(deck, today))
-  const [phase, setPhase] = useState<Phase>('answer')
+  const [restored] = useState(() => restoreSession(direction, deck, today))
+  const [queue, setQueue] = useState<string[]>(() => restored?.queue ?? buildDeckQueue(deck, today))
+  const [phase, setPhase] = useState<Phase>(restored?.phase ?? 'answer')
   /** Đáp án đang được hỏi ví dụ; null = đang hỏi đáp án. */
-  const [pendingId, setPendingId] = useState<string | null>(null)
-  const [found, setFound] = useState<string[]>([])
-  const [rejected, setRejected] = useState<string[]>([])
-  const [examplesFound, setExamplesFound] = useState<Record<string, string[]>>({})
-  const [reviewed, setReviewed] = useState(0)
+  const [pendingId, setPendingId] = useState<string | null>(restored?.pendingId ?? null)
+  const [found, setFound] = useState<string[]>(restored?.found ?? [])
+  const [rejected, setRejected] = useState<string[]>(restored?.rejected ?? [])
+  const [examplesFound, setExamplesFound] = useState<Record<string, string[]>>(
+    restored?.examplesFound ?? {},
+  )
+  const [reviewed, setReviewed] = useState(restored?.reviewed ?? 0)
+
+  useEffect(() => {
+    sessions[direction] = { today, queue, phase, pendingId, found, rejected, examplesFound, reviewed }
+  }, [direction, today, queue, phase, pendingId, found, rejected, examplesFound, reviewed])
 
   const group: DeckGroup | null = deck.find((g) => g.id === queue[0]) ?? null
   const pending = pendingId ? (group?.items.find((i) => i.id === pendingId) ?? null) : null
