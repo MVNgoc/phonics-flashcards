@@ -21,7 +21,6 @@ import {
   type RuleQuestion,
 } from '../lib/soundRules'
 import type { ReviewState } from '../lib/types'
-// ?url: tải bằng fetch khi mở trang, như trang Nghe.
 import pronunciationsUrl from '../data/pronunciations.json?url'
 import ruleWordsUrl from '../data/ruleWords.json?url'
 
@@ -36,7 +35,6 @@ const MODES: { value: Mode; label: string }[] = [
 const ghostButton =
   'rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium hover:border-sky-500 hover:text-sky-600'
 
-/** Bỏ qua phím tắt khi đang gõ trong ô nhập. */
 function typing(e: KeyboardEvent): boolean {
   const t = e.target as HTMLElement | null
   return !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)
@@ -48,7 +46,6 @@ async function fetchJson<T>(url: string): Promise<T> {
   return res.json() as Promise<T>
 }
 
-/** Từ điển + danh sách từ (~150KB gzip), chỉ tải khi cần (Đọc để hiện ngoại lệ, Áp dụng để hỏi). */
 function useRuleBank(): { bank: RuleBank | null; error: boolean } {
   const [bank, setBank] = useState<RuleBank | null>(null)
   const [error, setError] = useState(false)
@@ -101,9 +98,6 @@ export function RulesPage() {
   )
 }
 
-// ---------- chung ----------
-
-/** Từ với chữ được hỏi tô đỏ, gạch chân. */
 function MarkedWord({ word, start, end, className = '' }: { word: string; start: number; end: number; className?: string }) {
   return (
     <span className={className}>
@@ -132,8 +126,6 @@ const LEVEL_CHIP: Record<ReturnType<typeof cardLevel>, { text: string; className
   weak: { text: 'chưa nhớ', className: 'bg-rose-100 text-rose-700' },
   new: { text: 'chưa học', className: 'bg-slate-100 text-slate-500' },
 }
-
-// ---------- Đọc ----------
 
 function ReadMode({ bank }: { bank: RuleBank | null }) {
   const { data } = useStore()
@@ -217,8 +209,6 @@ function ReadMode({ bank }: { bank: RuleBank | null }) {
   )
 }
 
-// ---------- Thuộc lòng ----------
-
 const GRADES: Grade[] = [1, 3, 4, 5]
 const GRADE_STYLE: Record<Grade, string> = {
   1: 'border-rose-500 text-rose-600 hover:bg-rose-500 hover:text-slate-50',
@@ -239,7 +229,6 @@ function shuffle<T>(items: T[]): T[] {
 function RecallMode() {
   const { data, gradeRuleCard } = useStore()
   const today = todayISO()
-  // Hàng đợi tính một lần khi vào chế độ này: chấm xong không làm thẻ khác nhảy chỗ.
   const [queue, setQueue] = useState<string[]>(() =>
     buildReviewQueue(
       RULE_CARDS.map((c) => ({ id: c.id, reviews: [data.ruleReviews?.[c.id] ?? newReviewState()] })),
@@ -266,7 +255,6 @@ function RecallMode() {
       if (!free) gradeRuleCard(card.id, g, today)
       setReviewed((n) => n + 1)
       setFlipped(false)
-      // Sai thì hỏi lại ở cuối phiên.
       setQueue((q) => (g === 1 ? [...q.slice(1), q[0]] : q.slice(1)))
     },
     [card, free, gradeRuleCard, today],
@@ -360,9 +348,6 @@ function RecallMode() {
   )
 }
 
-// ---------- Áp dụng ----------
-
-/** Số từ vừa hỏi không được hỏi lại. */
 const RECENT_WORDS = 30
 
 function ApplyMode({ bank }: { bank: RuleBank }) {
@@ -384,14 +369,11 @@ function ApplyMode({ bank }: { bank: RuleBank }) {
       setPicked(null)
       if (q) setRecentWords([...recent, q.word].slice(-RECENT_WORDS))
     },
-    // weakness đổi sau mỗi câu trả lời; chỉ cần giá trị lúc bấm "Tiếp".
     [bank, weakness],
   )
 
-  // Câu đầu tiên, và khi đổi bộ lọc.
   useEffect(() => {
     next(rules, recentWords)
-    // Chỉ chạy lại khi đổi bộ lọc, không phải mỗi lần danh sách từ vừa hỏi đổi.
   }, [rules])
 
   const answer = useCallback(

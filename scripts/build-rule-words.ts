@@ -1,13 +1,4 @@
-/**
- * Sinh src/data/ruleWords.json: danh sách từ để trang Quy tắc sinh câu hỏi Áp dụng.
- *
- *   npm run build:rule-words   (chạy sau build:meanings)
- *
- * Lấy những từ vừa có phát âm (pronunciations.json) vừa có nghĩa (meanings.json):
- * có nghĩa trong từ điển là cách lọc đơn giản bỏ tên riêng, tên chữ cái, viết tắt
- * (ann, cee, mm). Bỏ thêm một ít từ tục. Ghi riêng ra file nhỏ để trang Quy tắc
- * không phải tải meanings.json (~3MB) chỉ để lọc.
- */
+// Sinh src/data/ruleWords.json (từ có cả phát âm lẫn nghĩa). Chạy sau build:meanings.
 import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'

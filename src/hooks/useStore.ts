@@ -33,9 +33,7 @@ interface Store {
     today: string,
     direction?: Direction,
   ) => void
-  /** Chấm một thẻ quy tắc (Quy tắc → Thuộc lòng). */
   gradeRuleCard: (cardId: string, grade: Grade, today: string) => void
-  /** Ghi một câu trả lời Áp dụng của quy tắc `ruleId`. */
   recordRuleQuiz: (ruleId: number, ok: boolean) => void
   mergeParsed: (parsed: ParsedPhoneme[]) => void
   addExtraAnswer: (word: string, answer: string) => void

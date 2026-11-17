@@ -10,7 +10,6 @@ import {
   type RuleQuestion,
 } from './soundRules'
 
-/** Phát âm giọng Anh lấy từ src/data/pronunciations.json. */
 const PRONS: Record<string, string[]> = {
   go: ['g ˈəʊ'],
   two: ['t ˈuː'],
@@ -90,7 +89,6 @@ describe('buildRuleBank', () => {
     ])
     expect(q(3, 'rain')[0].cluster).toEqual([1, 3])
     expect(ex(3, 'head')).toBeTruthy()
-    // y không tính là nguyên âm: ay, ey không thuộc quy tắc 3.
     expect(q(3, 'may')).toEqual([])
     expect(q(3, 'key')).toEqual([])
     expect(q(3, 'bear')).toEqual([])
@@ -111,10 +109,8 @@ describe('buildRuleBank', () => {
     expect(q(6, 'think')[0].answer).toBe('ng')
     expect(q(6, 'sing')[0].answer).toBe('ng')
     expect(q(6, 'hungry')[0].answer).toBe('ngg')
-    // g đứng trước e: quy tắc đoán chỉ /ng/ — singer đúng, finger là ngoại lệ.
     expect(q(6, 'singer')[0].answer).toBe('ng')
     expect(ex(6, 'finger')).toMatchObject({ expected: 'ng', actual: 'đọc /ng/./g/' })
-    // -s là hậu tố, không phải từ gốc.
     expect(q(6, 'kings')[0].answer).toBe('ng')
     expect(q(6, 'lunch')).toEqual([])
     expect(ex(6, 'lunch')).toBeUndefined()

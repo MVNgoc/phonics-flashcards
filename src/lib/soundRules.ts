@@ -1,24 +1,8 @@
 import type { RuleQuizStat } from './types'
 
-/**
- * 14 quy tắc "Shades of sounds": khi nào chữ đọc dài / ngắn / câm / đổi âm.
- *
- * Mỗi quy tắc có:
- *  - nội dung + ví dụ soạn tay (trang Quy tắc → Đọc),
- *  - một hoặc vài thẻ thuộc lòng "tình huống → kết quả" (→ Thuộc lòng, chấm SM-2),
- *  - một hàm nhận diện chạy trên mặt chữ + phát âm IPA giọng Anh của từ
- *    (src/data/pronunciations.json) để sinh câu hỏi Áp dụng và tìm ngoại lệ.
- *
- * Hàm nhận diện chỉ nhận những từ mà vị trí chữ ↔ âm suy ra chắc chắn được (vd chỉ
- * một chữ c trong từ). Từ đọc đúng quy tắc thành câu hỏi; từ đọc khác thì ghi là
- * ngoại lệ, không bao giờ thành câu hỏi để khỏi chấm sai người học theo quy tắc.
- */
-
 export interface RuleCard {
   id: string
-  /** Mặt trước: tình huống. */
   cue: string
-  /** Mặt sau: kết quả. */
   result: string
   examples: string[]
 }
@@ -28,7 +12,6 @@ export interface SoundRule {
   title: string
   text: string
   examples: string[]
-  /** Chú thích thêm (cách hiểu, ngoại lệ hay gặp). */
   note?: string
   cards: RuleCard[]
 }
@@ -224,9 +207,6 @@ export function ruleById(id: number): SoundRule | undefined {
   return SOUND_RULES.find((r) => r.id === id)
 }
 
-// ---------- câu hỏi Áp dụng ----------
-
-/** Các cách đọc có thể chọn khi trả lời. */
 export type Outcome =
   | 'long'
   | 'short'
@@ -261,12 +241,10 @@ export const OUTCOME_LABEL: Record<Outcome, string> = {
 export interface RuleQuestion {
   ruleId: number
   word: string
-  /** Chữ được hỏi: [đầu, cuối) trong từ. */
   start: number
   end: number
   options: Outcome[]
   answer: Outcome
-  /** Cả cụm chữ của quy tắc (ay, kn, ll, igh, ce…), tô sau khi trả lời. Không có = chỉ chữ được hỏi. */
   cluster?: [number, number]
 }
 
@@ -275,9 +253,7 @@ export interface RuleException {
   word: string
   start: number
   end: number
-  /** Quy tắc đoán đọc thế này… */
   expected: Outcome
-  /** …nhưng từ điển đọc khác, mô tả ngắn. */
   actual: string
 }
 
@@ -302,11 +278,9 @@ const VOWEL_SOUNDS = new Set([
 ])
 const isVowelSound = (s: Sound | undefined) => !!s && VOWEL_SOUNDS.has(s.base)
 
-/** Âm dài (tên chữ) và âm ngắn của từng chữ nguyên âm. */
 const LONG: Record<string, string[]> = { a: ['eɪ'], e: ['iː'], i: ['aɪ'], o: ['əʊ'], u: ['uː'] }
 const SHORT: Record<string, string[]> = { a: ['æ'], e: ['ɛ'], i: ['ɪ'], o: ['ɒ'], u: ['ɐ', 'ʌ', 'ʊ'] }
 
-/** Ghi IPA cho người đọc: bỏ khoảng trắng giữa các âm. */
 export function showPron(pron: string): string {
   return `/${pron.replace(/ /g, '')}/`
 }
@@ -320,23 +294,19 @@ type Detector = (word: string, sounds: Sound[], push: Push, pushEx: PushEx) => v
 
 const LONG_SHORT: Outcome[] = ['long', 'short']
 
-/** Chữ khác trong từ cũng có thể tạo ra âm này (access: cc → /ks/) — khi đó đếm âm không kết luận được. */
+// Chữ khác cũng ra âm này (access: cc → /ks/) thì đếm âm không kết luận được.
 const OTHER_SOURCES: Record<string, RegExp> = {
-s: /c|x|z/,
-z: /s/,
-t: /ed$|ch/,
-d: /ed$/,
-f: /ph|gh/,
-g: /x/,
+  s: /c|x|z/,
+  z: /s/,
+  t: /ed$|ch/,
+  d: /ed$/,
+  f: /ph|gh/,
+  g: /x/,
 }
 
-/** Phần sau ng là hậu tố (kings, strongly, kingdom): từ không phải từ gốc. */
 const NG_SUFFIX = /^(s|ly|ness|less|ful|fully|ster|sters|dom|doms|wise|ward|wards)$/
 
 const DETECTORS: Record<number, Detector> = {
-  // Nguyên âm đứng cuối âm tiết: từ một âm tiết kết thúc bằng nguyên âm (go, me),
-  // hoặc âm tiết đầu mở trong từ hai âm tiết (pa·per, ti·ger) — chỉ lấy khi từ
-  // điển xác nhận âm đầu là âm dài có nhấn, vì VCV vốn mơ hồ (city, never).
   1: (w, s, push, pushEx) => {
     const vowels = s.filter(isVowelSound)
     const one = /^[^aeiouy]+([aeiou])$/.exec(w)
@@ -359,39 +329,30 @@ const DETECTORS: Record<number, Detector> = {
     }
   },
 
-  // Nguyên âm không đứng cuối: từ một âm tiết có đúng một chữ nguyên âm, sau nó là phụ âm
-  // (không tính r, w, y vì ar, aw, ay là âm khác; không có e cuối).
   2: (w, s, push, pushEx) => {
     const m = /^([^aeiouy]*)([aeiou])([^aeiouyrw]+)$/.exec(w)
-    // gh (high, night) và h ngay sau nguyên âm (oh) là quy tắc khác.
     if (!m || /gh/.test(w) || m[3].startsWith('h')) return
-    // a trước l (all, talk, salt) đọc /or/ — là một quy tắc khác, bỏ qua.
     if (m[2] === 'a' && m[3].startsWith('l')) return
-    // Cần có phụ âm đứng trước nguyên âm hoặc không — đều được; nhưng qu/wa là âm khác.
     if (/(qu|w)$/.test(m[1])) return
     const vowels = s.filter(isVowelSound)
     if (vowels.length !== 1) return
     const letter = m[2]
     const at = m[1].length
     const v = vowels[0].base
-    // Cụm: nguyên âm + các phụ âm đứng sau nó (cat → at).
     if (SHORT[letter].includes(v))
       push({ word: w, start: at, end: at + 1, options: LONG_SHORT, answer: 'short', cluster: [at, w.length] })
     else if (LONG[letter].includes(v)) pushEx({ word: w, start: at, end: at + 1, expected: 'short', actual: `đọc dài /${v}/` })
   },
 
-  // Hai nguyên âm: từ một âm tiết có đúng một cụm nguyên âm là ai, ea, ee, oa, oe, ie, ue, ui.
   // y không tính là nguyên âm, nên ay, ey (day, key) không thuộc quy tắc này.
   3: (w, s, push, pushEx) => {
     const m = /^([^aeiouy]+)(ai|ea|ee|oa|oe|ie|ue|ui)([^aeiouy]*)$/.exec(w)
-    // Có r ngay sau (bear, deer, boar) là âm khác: /air/, /eer/, /or/. qu: u thuộc phụ âm /kw/.
     if (!m || m[3].startsWith('r') || /qu$/.test(m[1] + m[2][0])) return
     const vowels = s.filter(isVowelSound)
     if (vowels.length !== 1) return
     const first = m[2][0]
     const at = m[1].length
     const v = vowels[0].base
-    // u dài có thể là /yoo/ hoặc Long /oo/; e dài trong ee/ea là /ee/.
     if (LONG[first].includes(v)) {
       const cluster: [number, number] = [at, at + 2]
       push({ word: w, start: at, end: at + 1, options: LONG_SHORT, answer: 'long', cluster })
@@ -401,14 +362,11 @@ const DETECTORS: Record<number, Detector> = {
     }
   },
 
-  // Hai phụ âm giống nhau: đếm âm trong từ điển — mỗi cặp chỉ ra một âm.
   4: (w, s, push, pushEx) => {
     const m = /([bdfglmnpstz])\1/.exec(w)
     if (!m) return
     const letter = m[1]
-    // Chỉ một cặp, và chữ đó không xuất hiện lẻ ở chỗ khác (đếm cho chắc).
     if (countText(w, new RegExp(letter, 'g')) !== 2) return
-    // ss/s hay đọc /z/, gg trước e/i đọc /dʒ/ — chỉ đếm khi chắc chắn.
     const sound = letter === 's' ? 's' : letter
     if (letter === 'g' && /gg[eiy]/.test(w)) return
     const n = count(s, sound)
@@ -420,7 +378,6 @@ const DETECTORS: Record<number, Detector> = {
     }
   },
 
-  // tch: tch đọc /ch/ — t không thành /t/ riêng.
   5: (w, s, push, pushEx) => {
     const at = w.indexOf('tch')
     if (at === -1) return
@@ -429,14 +386,9 @@ const DETECTORS: Record<number, Detector> = {
     else pushEx({ word: w, start: at, end: at + 3, expected: 'silent', actual: 'không đọc /ch/' })
   },
 
-  // n trước /g/, /k/ (chữ k, c cứng, x, q, g) → /ng/.
-  // ng: quy tắc đoán /ng/./g/ khi ng ở giữa từ gốc và g đứng trước a, o, u hoặc phụ âm;
-  // còn lại chỉ /ng/. Từ điển đọc khác thì là ngoại lệ (thường là từ ghép: hangover).
   6: (w, s, push, pushEx) => {
     const ngCount = count(s, 'ŋ')
-    // c chỉ đọc /k/ khi không đứng trước e, i, y, h (fancy đọc /s/, lunch đọc /ch/: không thuộc quy tắc).
     const nk = /n(k|c(?![eiyh])|x|q)/.exec(w)
-    // ng + e/i/y có thể là g mềm (danger, change): từ điển không có /ŋ/ thì tự bỏ qua.
     const ng = /ng/.exec(w)
     const nTotal = countText(w, /n/g)
     if (nk && !ng && countText(w, /n(k|c(?![eiyh])|x|q)/g) === 1) {
@@ -455,7 +407,6 @@ const DETECTORS: Record<number, Detector> = {
       const hardG = /^[^eiy]/.test(rest)
       const expected: Outcome = middle && root && hardG ? 'ngg' : 'ng'
       const at = { word: w, start: ng.index, end: ng.index + 2 }
-      // Cụm: ng + chữ quyết định đứng sau (hungry → ngr, singer → nge).
       const cluster: [number, number] = [ng.index, Math.min(ng.index + 3, w.length)]
       if (actual === expected) push({ ...at, options: ['ng', 'ngg'], answer: expected, cluster })
       else pushEx({ ...at, expected, actual: actual === 'ngg' ? 'đọc /ng/./g/' : 'chỉ đọc /ng/' })
@@ -480,17 +431,14 @@ const DETECTORS: Record<number, Detector> = {
     else pushEx({ word: w, start: 0, end: 1, expected: 'silent', actual: 'đọc /g/' })
   },
 
-  // c: chỉ lấy từ có đúng một chữ c (không ch, ck, sc, cc) và không có x, q, kn, để
-  // đếm được âm /k/: c cứng thì từ điển có thêm đúng một /k/ so với các chữ k.
+  // c cứng thì từ điển có thêm đúng một /k/ so với số chữ k.
   10: (w, s, push, pushEx) => {
     if (countText(w, /c/g) !== 1 || /ch|ck|sc|[xq]|kn/.test(w)) return
     const at = w.indexOf('c')
     const next = w[at + 1]
-    // ci/ce + nguyên âm (special, ocean) đọc /sh/ — quy tắc khác.
     if (/c[ei][aeiou]/.test(w)) return
     const kLetters = countText(w, /k/g)
     const kSounds = count(s, 'k')
-    // Cụm: c + chữ đứng sau (ce, ca, ct); c cuối từ thì chỉ c.
     const cluster: [number, number] = [at, Math.min(at + 2, w.length)]
     if (next && 'eiy'.includes(next)) {
       if (kSounds === kLetters && s.some((x) => x.base === 's'))
@@ -498,12 +446,10 @@ const DETECTORS: Record<number, Detector> = {
       else if (kSounds === kLetters + 1) pushEx({ word: w, start: at, end: at + 1, expected: 's', actual: 'đọc /k/' })
       return
     }
-    // Còn lại: trước a, o, u, phụ âm, hoặc c cuối từ (music, magic) → /k/.
     if (kSounds === kLetters + 1) push({ word: w, start: at, end: at + 1, options: ['s', 'k'], answer: 'k', cluster })
     else if (kSounds === kLetters) pushEx({ word: w, start: at, end: at + 1, expected: 'k', actual: 'không đọc /k/' })
   },
 
-  // g: tương tự, một chữ g (không gh, gn, gg, ng, dg) và không có x (x có thể là /gz/).
   11: (w, s, push, pushEx) => {
     if (countText(w, /g/g) !== 1 || /gh|gn|gg|ng|dg|x/.test(w)) return
     const at = w.indexOf('g')
@@ -522,7 +468,6 @@ const DETECTORS: Record<number, Detector> = {
   },
 
   12: (w, s, push, pushEx) => {
-    // eigh, aigh (eight, straight) là cụm khác: i thuộc ei / ai, không phải "i trước gh".
     const at = w.indexOf('igh')
     if (at === -1 || countText(w, /igh/g) !== 1 || /[aeiou]igh/.test(w)) return
     if (s.some((x) => x.base === 'aɪ')) {
@@ -534,7 +479,6 @@ const DETECTORS: Record<number, Detector> = {
     }
   },
 
-  // y cuối, phụ âm đứng trước, đúng 2 âm tiết, nhấn âm đầu.
   13: (w, s, push, pushEx) => {
     if (!/[^aeiouy]y$/.test(w)) return
     const vowels = s.filter(isVowelSound)
@@ -546,9 +490,7 @@ const DETECTORS: Record<number, Detector> = {
     else if (last.base === 'aɪ') pushEx({ word: w, start: at, end: at + 1, expected: 'i', actual: 'đọc /igh/' })
   },
 
-  // e cuối từ ≥ 2 âm tiết (không tính ee, ie, ye, oe, ue — đó là cụm nguyên âm).
   14: (w, s, push, pushEx) => {
-    // -re, -le (fire, acre, table): e nằm trong âm /ur/, /ul/ — không xét.
     if (!/[^aeiouy]e$/.test(w) || /re$|[^aeiou]le$/.test(w)) return
     const vowels = s.filter(isVowelSound)
     const last = s[s.length - 1]
@@ -556,8 +498,6 @@ const DETECTORS: Record<number, Detector> = {
     if (!isVowelSound(last)) {
       if (vowels.length >= 2) push({ word: w, start: w.length - 1, end: w.length, options: ['sounded', 'silent'], answer: 'silent' })
     } else if (vowels.length >= 3 || (vowels.length === 2 && /^[^aeiouy]*[aeiouy][^aeiouy]+e$/.test(w))) {
-      // Đọc e cuối (recipe, karate). Nếu từ chỉ có một nguyên âm viết khác, cần
-      // 2 âm tiết đọc để chắc e cuối là âm tiết riêng.
       pushEx({ word: w, start: w.length - 1, end: w.length, expected: 'silent', actual: `đọc /${last.base}/` })
     }
   },
@@ -570,14 +510,9 @@ const SHORT_WORDS = new Set([
 export interface RuleBank {
   questions: RuleQuestion[]
   exceptions: RuleException[]
-  /** Từ → IPA đầu tiên, để hiện khi trả lời. */
   pron: Map<string, string>
 }
 
-/**
- * Quét danh sách từ, sinh câu hỏi và ngoại lệ cho mọi quy tắc. Chỉ dùng phát âm đầu
- * tiên trong từ điển (giọng Anh phổ biến nhất). Bỏ qua từ có chữ ngoài a–z.
- */
 export function buildRuleBank(words: string[], prons: Record<string, string[]>): RuleBank {
   const questions: RuleQuestion[] = []
   const exceptions: RuleException[] = []
@@ -587,7 +522,6 @@ export function buildRuleBank(words: string[], prons: Record<string, string[]>):
   for (const raw of words) {
     const w = raw.toLowerCase()
     if (seen.has(w) || !/^[a-z]+$/.test(w)) continue
-    // Từ 2 chữ cái trong từ điển phần lớn là tên chữ / viết tắt (el, em, ex): chỉ giữ từ thường gặp.
     if (w.length < 3 && !SHORT_WORDS.has(w)) continue
     seen.add(w)
     const p = prons[w]?.[0]
@@ -615,13 +549,10 @@ export function buildRuleBank(words: string[], prons: Record<string, string[]>):
 
 export interface MarkSegment {
   text: string
-  /** Nằm trong cụm của quy tắc. */
   cluster: boolean
-  /** Là chữ được hỏi. */
   asked: boolean
 }
 
-/** Cắt từ thành các đoạn để tô cả cụm quy tắc, gạch chân riêng chữ được hỏi. */
 export function markSegments(word: string, start: number, end: number, cluster?: [number, number]): MarkSegment[] {
   const [cs, ce] = cluster ?? [start, end]
   const cuts = [...new Set([0, cs, ce, start, end, word.length])].sort((a, b) => a - b)
@@ -634,10 +565,6 @@ export function markSegments(word: string, start: number, end: number, cluster?:
   return out
 }
 
-/**
- * Chọn câu hỏi tiếp theo: ưu tiên quy tắc đang yếu (sai gần đây nhiều) và từ ngắn
- * (thường gặp hơn). `rules` rỗng = mọi quy tắc. Tránh lặp từ vừa hỏi.
- */
 export function pickQuestion(
   bank: RuleQuestion[],
   rules: number[],
@@ -647,7 +574,6 @@ export function pickQuestion(
 ): RuleQuestion | null {
   const pool = bank.filter((q) => (rules.length === 0 || rules.includes(q.ruleId)) && !recentWords.includes(q.word))
   if (pool.length === 0) return null
-  // Chọn quy tắc trước (để quy tắc ít từ vẫn được hỏi đều), có trọng số theo độ yếu.
   const ruleIds = [...new Set(pool.map((q) => q.ruleId))]
   const weights = ruleIds.map((id) => 1 + 2 * weakness(id))
   let r = rng() * weights.reduce((a, b) => a + b, 0)
@@ -659,7 +585,6 @@ export function pickQuestion(
       break
     }
   }
-  // Trong quy tắc: nghiêng về từ ngắn — lấy ngẫu nhiên trong nửa ngắn hơn phần lớn thời gian.
   const inRule = pool.filter((q) => q.ruleId === ruleId).sort((a, b) => a.word.length - b.word.length)
   const span = rng() < 0.75 ? Math.max(1, Math.ceil(inRule.length / 2)) : inRule.length
   return inRule[Math.floor(rng() * span)]
@@ -676,7 +601,6 @@ export function recordQuiz(stat: RuleQuizStat | undefined, ok: boolean): RuleQui
   }
 }
 
-/** Tỉ lệ sai gần đây, 0..1. Chưa làm câu nào = 0.5 (ưu tiên vừa phải). */
 export function weaknessOf(stat: RuleQuizStat | undefined): number {
   if (!stat || stat.recent.length === 0) return 0.5
   return stat.recent.filter((x) => !x).length / stat.recent.length
