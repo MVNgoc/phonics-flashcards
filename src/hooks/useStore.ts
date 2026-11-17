@@ -5,6 +5,7 @@ import { loadData, saveData, uid } from '../lib/storage'
 import { newReviewState, review, type Grade } from '../lib/sm2'
 import { seedData } from '../lib/seed'
 import { reviewOf, type Direction } from '../lib/deck'
+import { recordQuiz } from '../lib/soundRules'
 
 export interface ParsedPhoneme {
   note: string
@@ -32,6 +33,10 @@ interface Store {
     today: string,
     direction?: Direction,
   ) => void
+  /** Chấm một thẻ quy tắc (Quy tắc → Thuộc lòng). */
+  gradeRuleCard: (cardId: string, grade: Grade, today: string) => void
+  /** Ghi một câu trả lời Áp dụng của quy tắc `ruleId`. */
+  recordRuleQuiz: (ruleId: number, ok: boolean) => void
   mergeParsed: (parsed: ParsedPhoneme[]) => void
   addExtraAnswer: (word: string, answer: string) => void
   removeExtraAnswer: (word: string, answer: string) => void
@@ -109,6 +114,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       })),
     [mapPhoneme],
   )
+
+  const gradeRuleCard = useCallback<Store['gradeRuleCard']>((cardId, grade, today) => {
+    setData((d) => {
+      const current = d.ruleReviews?.[cardId] ?? newReviewState()
+      return { ...d, ruleReviews: { ...d.ruleReviews, [cardId]: review(current, grade, today) } }
+    })
+  }, [])
+
+  const recordRuleQuiz = useCallback<Store['recordRuleQuiz']>((ruleId, ok) => {
+    setData((d) => {
+      const key = String(ruleId)
+      return { ...d, ruleQuiz: { ...d.ruleQuiz, [key]: recordQuiz(d.ruleQuiz?.[key], ok) } }
+    })
+  }, [])
 
   /**
    * Bulk import: merge groups by note (blank note always creates a new group),
@@ -188,6 +207,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     updateGrapheme,
     deleteGrapheme,
     gradeCard,
+    gradeRuleCard,
+    recordRuleQuiz,
     mergeParsed,
     addExtraAnswer,
     removeExtraAnswer,

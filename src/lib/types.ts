@@ -44,6 +44,18 @@ export interface AppData {
    * dạng nhãn chuẩn hoá cách nhau bằng dấu cách, vd "d or t ur".
    */
   extraAnswers?: Record<string, string[]>
+  /** Trang Quy tắc → Thuộc lòng: lịch ôn SM-2 của từng thẻ quy tắc, khoá là id thẻ ("r10a"). */
+  ruleReviews?: Record<string, ReviewState>
+  /** Trang Quy tắc → Áp dụng: kết quả luyện theo từng quy tắc, khoá là số quy tắc. */
+  ruleQuiz?: Record<string, RuleQuizStat>
+}
+
+/** Kết quả luyện Áp dụng của một quy tắc. */
+export interface RuleQuizStat {
+  correct: number
+  wrong: number
+  /** Đúng/sai của các lần gần nhất, cũ trước mới sau. */
+  recent: boolean[]
 }
 
 /** What actually sits in localStorage — wrapper lets storage.ts migrate later. */

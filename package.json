@@ -11,7 +11,8 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "build:pron": "vite-node scripts/build-pronunciations.ts",
-    "build:meanings": "vite-node scripts/build-meanings.ts"
+    "build:meanings": "vite-node scripts/build-meanings.ts",
+    "build:rule-words": "vite-node scripts/build-rule-words.ts"
   },
   "dependencies": {
     "react": "^18.3.1",

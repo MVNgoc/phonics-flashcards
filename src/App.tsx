@@ -9,6 +9,7 @@ import { LookupPage } from './pages/LookupPage'
 import { DictationPage } from './pages/DictationPage'
 import { ManagePage } from './pages/ManagePage'
 import { StatsPage } from './pages/StatsPage'
+import { RulesPage } from './pages/RulesPage'
 
 const DATE_FORMAT = new Intl.DateTimeFormat('vi-VN', {
   weekday: 'long',
@@ -20,6 +21,7 @@ const DATE_FORMAT = new Intl.DateTimeFormat('vi-VN', {
 const NAV = [
   { to: '/study', label: 'Học' },
   { to: '/dictation', label: 'Nghe' },
+  { to: '/rules', label: 'Quy tắc' },
   { to: '/lookup', label: 'Tra cứu' },
   { to: '/manage', label: 'Quản lý' },
   { to: '/stats', label: 'Thống kê' },
@@ -36,6 +38,7 @@ export default function App() {
             <Route path="/" element={<Navigate to="/study" replace />} />
             <Route path="/study" element={<StudyPage />} />
             <Route path="/dictation" element={<DictationPage />} />
+            <Route path="/rules" element={<RulesPage />} />
             <Route path="/lookup" element={<LookupPage />} />
             <Route path="/manage" element={<ManagePage />} />
             <Route path="/stats" element={<StatsPage />} />
