@@ -21,9 +21,9 @@ const DATE_FORMAT = new Intl.DateTimeFormat('vi-VN', {
 
 const NAV = [
   { to: '/study', label: 'Học' },
-  { to: '/dictation', label: 'Nghe' },
+  { to: '/dictation', label: 'Chính tả' },
   { to: '/rules', label: 'Shades of sounds' },
-  { to: '/analyse', label: 'How to Analyse the sounds' },
+  { to: '/analyse', label: 'Analyse the sounds' },
   { to: '/lookup', label: 'Tra cứu' },
   { to: '/manage', label: 'Quản lý' },
   { to: '/stats', label: 'Thống kê' },
