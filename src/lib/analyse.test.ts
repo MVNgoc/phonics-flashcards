@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { analyse, dictionaryInfo, reducedKind, shadeOf, splitSyllables, stressOptions } from './analyse'
+import { analyse, shadeOf, splitSyllables, stressOptions } from './analyse'
 
 const splits = (w: string) => splitSyllables(w).map((c) => c.syllables.map((s) => s.text).join('.'))
 
@@ -60,17 +60,5 @@ describe('stress', () => {
     const syls = splitSyllables('village')[0].syllables
     expect(analyse(syls, 0, { verb: false, reduce: {} }).slice(-1)[0]?.sound).toBe('i')
     expect(analyse(syls, 0, { verb: true, reduce: {} }).slice(-1)[0]?.sound).toBe('ai')
-  })
-})
-
-describe('dictionaryInfo', () => {
-  it('đếm âm tiết và vị trí nhấn', () => {
-    expect(dictionaryInfo('n ˈæ tʃ ɹ ə l i')).toMatchObject({ syllables: 3, stress: 0 })
-    expect(dictionaryInfo('j uː n ˈiː k')).toMatchObject({ syllables: 2, stress: 1 })
-    expect(dictionaryInfo('n ˈæ tʃ ɹ ə l i')?.vowels).toEqual(['æ', 'ə', 'i'])
-    expect(reducedKind('ə')).toBe('u')
-    expect(reducedKind('ɪ')).toBe('i')
-    expect(reducedKind('æ')).toBeNull()
-    expect(dictionaryInfo(undefined)).toBeNull()
   })
 })

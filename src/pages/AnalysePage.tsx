@@ -1,17 +1,14 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useSettings } from '../hooks/useSettings'
 import { useSpeech } from '../hooks/useSpeech'
 import {
   analyse,
-  dictionaryInfo,
-  reducedKind,
   splitSyllables,
   stressOptions,
   type AnalysedSyllable,
   type SplitCandidate,
 } from '../lib/analyse'
-import pronunciationsUrl from '../data/pronunciations.json?url'
 
 type Mode = 'guide' | 'tool'
 
@@ -123,42 +120,19 @@ function Guide() {
   )
 }
 
-function usePronunciations(): Record<string, string[]> | null {
-  const [prons, setProns] = useState<Record<string, string[]> | null>(null)
-  useEffect(() => {
-    let alive = true
-    fetch(pronunciationsUrl)
-      .then((r) => r.json() as Promise<Record<string, string[]>>)
-      .then((d) => alive && setProns(d))
-      .catch(() => {})
-    return () => {
-      alive = false
-    }
-  }, [])
-  return prons
-}
-
 const dots = (c: SplitCandidate) => c.syllables.map((s) => s.text).join('·')
-
-interface Check {
-  ok: boolean
-  lines: { ok: boolean; text: string }[]
-}
 
 function Tool() {
   const { settings } = useSettings()
   const speech = useSpeech(settings.dictationVoice)
-  const prons = usePronunciations()
 
   const [query, setQuery] = useState('')
   const [splitPick, setSplitPick] = useState<number | null>(null)
   const [stressPick, setStressPick] = useState<number | null>(null)
   const [verb, setVerb] = useState(false)
   const [reduce, setReduce] = useState<Record<number, 'u' | 'i'>>({})
-  const [checked, setChecked] = useState(false)
 
   const word = query.toLowerCase().replace(/[^a-z]/g, '')
-  const dict = useMemo(() => dictionaryInfo(prons?.[word]?.[0]), [prons, word])
   const splits = useMemo(() => splitSyllables(word), [word])
 
   const split = splitPick === null ? undefined : splits[splitPick]
@@ -168,45 +142,13 @@ function Tool() {
   const result = split && stress !== null ? analyse(syls, stress, { verb, reduce }) : []
   const hasAceAgeAte = syls.length > 1 && /a(ce|ge|te)$/.test(syls[syls.length - 1].text)
 
-  function touch() {
-    setChecked(false)
-  }
-
   function onQuery(v: string) {
     setQuery(v)
     setSplitPick(null)
     setStressPick(null)
     setReduce({})
     setVerb(false)
-    touch()
   }
-
-  const check: Check | null = useMemo(() => {
-    if (!checked || !split || stress === null) return null
-    if (!dict) return { ok: false, lines: [{ ok: false, text: 'Từ này chưa có trong từ điển phát âm của app nên không kiểm tra được.' }] }
-    const lines: Check['lines'] = []
-    const countOk = dict.syllables === syls.length
-    lines.push({
-      ok: countOk,
-      text: countOk
-        ? `Chia âm tiết: đúng số âm tiết (${syls.length}).`
-        : `Chia âm tiết: từ điển có ${dict.syllables} âm tiết, bạn chia ${syls.length} → xem lại bước 1.`,
-    })
-    if (countOk) {
-      const stressOk = dict.stress === stress
-      lines.push({
-        ok: stressOk,
-        text: stressOk ? `Dấu nhấn: đúng, nhấn âm ${stress + 1}.` : `Dấu nhấn: từ điển nhấn âm ${dict.stress + 1}, bạn chọn âm ${stress + 1}.`,
-      })
-      result.forEach((r, i) => {
-        if (r.state !== 'reduced') return
-        const kind = reducedKind(dict.vowels[i])
-        if (kind === null) lines.push({ ok: false, text: `Âm tiết ${i + 1} (${r.text}): từ điển đọc đầy đủ /${dict.vowels[i]}/, không rớt.` })
-        else lines.push({ ok: kind === r.sound, text: `Âm tiết ${i + 1} (${r.text}): rớt /${kind === 'u' ? 'u' : 'i'}/ trong từ điển, bạn chọn /${r.sound}/.` })
-      })
-    }
-    return { ok: lines.every((l) => l.ok), lines }
-  }, [checked, split, stress, dict, syls.length, result])
 
   return (
     <div className="space-y-5">
@@ -238,7 +180,6 @@ function Tool() {
                     setSplitPick(i)
                     setStressPick(null)
                     setReduce({})
-                    touch()
                   }}
                   aria-pressed={splitPick === i}
                   className={`rounded-lg border px-3 py-1.5 font-mono ${
@@ -292,7 +233,6 @@ function Tool() {
                         type="button"
                         onClick={() => {
                           setStressPick(o.index)
-                          touch()
                         }}
                         aria-pressed={stress === o.index}
                         className={`rounded-lg border px-3 py-1.5 text-sm ${
@@ -312,7 +252,6 @@ function Tool() {
                       checked={verb}
                       onChange={(e) => {
                         setVerb(e.target.checked)
-                        touch()
                       }}
                     />
                     Đây là động từ (-{syls[syls.length - 1].text.slice(-3)} → /ai/; danh từ / tính từ → /i/)
@@ -329,14 +268,13 @@ function Tool() {
                       reduce={reduce}
                       onToggle={(i) => {
                         setReduce((r) => ({ ...r, [i]: (r[i] ?? 'u') === 'u' ? 'i' : 'u' }))
-                        touch()
                       }}
                     />
                   </>
                 )}
               </Step>
 
-              <Step n={4} title="Đọc thử và kiểm tra">
+              <Step n={4} title="Đọc thử và chọn">
                 <div className="flex flex-wrap items-center gap-3">
                   <button type="button" className={ghostButton} onClick={() => speech.speak(word)}>
                     🔊 Nghe từ
@@ -346,34 +284,8 @@ function Tool() {
                   </button>
                 </div>
                 <p className="mt-3 text-sm text-slate-500">
-                  Nghe từ rồi đọc thử theo cách bạn vừa chia và nhấn. Nếu nghe dở → bước 1 sai, chọn lại cách chia âm tiết.
+                  Nghe từ rồi đọc thử theo cách bạn vừa chia và nhấn, chọn phương án nhấn hay nhất. Nếu tất cả đều dở → bước 1 sai, chọn lại cách chia âm tiết.
                 </p>
-                <button
-                  type="button"
-                  disabled={stress === null}
-                  onClick={() => setChecked(true)}
-                  className="cp-btn mt-3 rounded-lg px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  Kiểm tra
-                </button>
-                {stress === null && <span className="ml-3 text-sm text-slate-500">Chọn cách chia và dấu nhấn trước.</span>}
-                {check && (
-                  <div className={`mt-3 border-l-4 p-3 ${check.ok ? 'border-emerald-500 bg-emerald-50' : 'border-rose-500 bg-rose-50'}`}>
-                    <p className="font-semibold">{check.ok ? 'Đúng hết!' : 'Chưa đúng hết'}</p>
-                    <ul className="mt-1 space-y-0.5 text-sm">
-                      {check.lines.map((l) => (
-                        <li key={l.text} className={l.ok ? 'text-emerald-700' : 'text-rose-700'}>
-                          {l.ok ? '✓' : '✗'} {l.text}
-                        </li>
-                      ))}
-                    </ul>
-                    {dict && (
-                      <p className="mt-2 text-sm text-slate-600">
-                        Từ điển: <span className="font-mono">{dict.ipa}</span> · {dict.syllables} âm tiết · nhấn âm {dict.stress + 1}
-                      </p>
-                    )}
-                  </div>
-                )}
               </Step>
             </>
           )}
