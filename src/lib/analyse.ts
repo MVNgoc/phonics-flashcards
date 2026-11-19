@@ -298,17 +298,29 @@ export interface DictionaryInfo {
   ipa: string
   syllables: number
   stress: number
+  /** Nguyên âm IPA của từng âm tiết. */
+  vowels: string[]
+}
+
+const REDUCED_U = new Set(['ə', 'ɐ', 'ʌ', 'ʊ'])
+const REDUCED_I = new Set(['ɪ', 'i'])
+
+/** Nguyên âm rớt trong từ điển đọc thành /u/ hay /i/; null nếu từ điển đọc đầy đủ. */
+export function reducedKind(ipaVowel: string): 'u' | 'i' | null {
+  return REDUCED_U.has(ipaVowel) ? 'u' : REDUCED_I.has(ipaVowel) ? 'i' : null
 }
 
 export function dictionaryInfo(pron: string | undefined): DictionaryInfo | null {
   if (!pron) return null
   let syllables = 0
   let stress = 0
+  const vowels: string[] = []
   for (const t of pron.split(' ').filter(Boolean)) {
     const base = t.replace(/^[ˈˌ]/, '')
     if (!IPA_VOWELS.has(base)) continue
     if (t.startsWith('ˈ')) stress = syllables
+    vowels.push(base)
     syllables++
   }
-  return { ipa: `/${pron.replace(/ /g, '')}/`, syllables, stress }
+  return { ipa: `/${pron.replace(/ /g, '')}/`, syllables, stress, vowels }
 }
