@@ -127,28 +127,11 @@ function Tool() {
   const speech = useSpeech(settings.dictationVoice)
 
   const [query, setQuery] = useState('')
-  const [splitPick, setSplitPick] = useState<number | null>(null)
-  const [stressPick, setStressPick] = useState<number | null>(null)
   const [verb, setVerb] = useState(false)
-  const [reduce, setReduce] = useState<Record<number, 'u' | 'i'>>({})
 
   const word = query.toLowerCase().replace(/[^a-z]/g, '')
   const splits = useMemo(() => splitSyllables(word), [word])
-
-  const split = splitPick === null ? undefined : splits[splitPick]
-  const syls = split?.syllables ?? []
-  const stressOpts = useMemo(() => stressOptions(syls), [syls])
-  const stress = stressOpts.length === 1 ? stressOpts[0].index : stressPick
-  const result = split && stress !== null ? analyse(syls, stress, { verb, reduce }) : []
-  const hasAceAgeAte = syls.length > 1 && /a(ce|ge|te)$/.test(syls[syls.length - 1].text)
-
-  function onQuery(v: string) {
-    setQuery(v)
-    setSplitPick(null)
-    setStressPick(null)
-    setReduce({})
-    setVerb(false)
-  }
+  const hasAceAgeAte = splits.some((c) => c.syllables.length > 1 && /a(ce|ge|te)$/.test(c.syllables[c.syllables.length - 1].text))
 
   return (
     <div className="space-y-5">
@@ -156,139 +139,95 @@ function Tool() {
         <input
           autoFocus
           value={query}
-          onChange={(e) => onQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value)
+            setVerb(false)
+          }}
           placeholder="Gõ một từ tiếng Anh, vd: naturally, teacher, unique"
           autoCapitalize="none"
           autoCorrect="off"
           spellCheck={false}
           className={input}
         />
+        {hasAceAgeAte && (
+          <label className="mt-3 flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={verb} onChange={(e) => setVerb(e.target.checked)} />
+            Đây là động từ (ace, age, ate → /ai/; danh từ / tính từ → /i/)
+          </label>
+        )}
       </div>
 
       {word && splits.length === 0 && <p className="cp-panel p-6 text-center text-slate-500">Không phân tích được từ này.</p>}
 
       {splits.length > 0 && (
         <>
-          <Step n={1} title="Chia âm tiết">
-            <p className="text-sm text-slate-500">Chọn cách chia âm tiết mà bạn cho là hợp lý.</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {splits.map((c, i) => (
-                <button
-                  key={dots(c)}
-                  type="button"
-                  onClick={() => {
-                    setSplitPick(i)
-                    setStressPick(null)
-                    setReduce({})
-                  }}
-                  aria-pressed={splitPick === i}
-                  className={`rounded-lg border px-3 py-1.5 font-mono ${
-                    splitPick === i ? 'border-rose-500 bg-rose-50 text-rose-700' : 'border-slate-300 hover:border-sky-500'
-                  }`}
-                >
-                  {dots(c)}
-                </button>
-              ))}
-            </div>
-            {split && split.notes.length > 0 && (
-              <ul className="mt-2 list-disc pl-5 text-sm text-slate-500">
-                {[...new Set(split.notes)].map((n) => (
-                  <li key={n}>{n}</li>
-                ))}
-              </ul>
-            )}
-          </Step>
+          <p className="text-sm text-slate-500">
+            {splits.length === 1 ? '1 cách chia âm tiết' : `${splits.length} cách chia âm tiết đều hợp lệ`}. Mỗi cách chia kèm các phương án dấu nhấn.
+            Nghe từ rồi chọn phương án nhấn hay nhất.
+          </p>
 
-          {split && (
-            <>
-              <Step n={2} title="Shades of sounds">
-                <ul className="space-y-1.5">
-                  {analyse(syls, -1, { verb, reduce }).map((r, i) => {
-                    return (
+          {splits.map((c) => {
+            const syls = c.syllables
+            const shades = analyse(syls, -1, { verb, reduce: {} })
+            return (
+              <section key={dots(c)} className="cp-panel space-y-4 p-4">
+                <div>
+                  <p className="text-xs uppercase tracking-wider text-slate-500">Bước 1 · Chia âm tiết</p>
+                  <h2 className="font-mono text-2xl font-semibold">{dots(c)}</h2>
+                  {c.notes.length > 0 && (
+                    <ul className="mt-1 list-disc pl-5 text-sm text-slate-500">
+                      {[...new Set(c.notes)].map((n) => (
+                        <li key={n}>{n}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                <div>
+                  <p className="text-xs uppercase tracking-wider text-slate-500">Bước 2 · Shades of sounds</p>
+                  <ul className="mt-1 space-y-1">
+                    {shades.map((r, i) => (
                       <li key={i} className="flex flex-wrap items-baseline gap-x-3">
-                        <span className="font-mono text-base">{highlight(r)}</span>
+                        <span className="font-mono">{highlight(r)}</span>
                         <span className="text-sm text-slate-500">
                           {r.shade.rule !== null && <b className="mr-1 text-rose-500">#{r.shade.rule}</b>}
                           {r.shade.explain}
                         </span>
                       </li>
-                    )
-                  })}
-                </ul>
-                <p className="mt-2 text-sm">
-                  <Link to="/rules" className="text-sky-600 underline">
-                    Xem 15 quy tắc
-                  </Link>
-                </p>
-              </Step>
-
-              <Step n={3} title="Đặt dấu nhấn">
-                {stressOpts.length === 1 ? (
-                  <p className="text-sm text-slate-500">{stressOpts[0].reason ?? 'Từ 1 âm tiết: nhấn luôn âm tiết này.'}</p>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {stressOpts.map((o) => (
-                      <button
-                        key={o.index}
-                        type="button"
-                        onClick={() => {
-                          setStressPick(o.index)
-                        }}
-                        aria-pressed={stress === o.index}
-                        className={`rounded-lg border px-3 py-1.5 text-sm ${
-                          stress === o.index ? 'border-rose-500 bg-rose-50 text-rose-700' : 'border-slate-300 hover:border-sky-500'
-                        }`}
-                      >
-                        Nhấn âm {o.index + 1}
-                        {o.chance !== null && <span className="ml-1 opacity-60">({o.chance}%)</span>}
-                      </button>
                     ))}
-                  </div>
-                )}
-                {hasAceAgeAte && (
-                  <label className="mt-3 flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={verb}
-                      onChange={(e) => {
-                        setVerb(e.target.checked)
-                      }}
-                    />
-                    Đây là động từ (-{syls[syls.length - 1].text.slice(-3)} → /ai/; danh từ / tính từ → /i/)
-                  </label>
-                )}
-                {stress !== null && (
-                  <>
-                    <p className="mt-3 text-sm text-slate-500">
-                      Nguyên âm không nhấn rớt /u/ (70%) hoặc /i/ (30%). Bấm vào âm đã rớt để đổi qua lại.
-                    </p>
-                    <Chips
-                      result={result}
-                      stress={stress}
-                      reduce={reduce}
-                      onToggle={(i) => {
-                        setReduce((r) => ({ ...r, [i]: (r[i] ?? 'u') === 'u' ? 'i' : 'u' }))
-                      }}
-                    />
-                  </>
-                )}
-              </Step>
-
-              <Step n={4} title="Đọc thử và chọn">
-                <div className="flex flex-wrap items-center gap-3">
-                  <button type="button" className={ghostButton} onClick={() => speech.speak(word)}>
-                    🔊 Nghe từ
-                  </button>
-                  <button type="button" className={ghostButton} onClick={() => speech.speak(word, 0.6)}>
-                    🐢 Chậm
-                  </button>
+                  </ul>
                 </div>
-                <p className="mt-3 text-sm text-slate-500">
-                  Nghe từ rồi đọc thử theo cách bạn vừa chia và nhấn, chọn phương án nhấn hay nhất. Nếu tất cả đều dở → bước 1 sai, chọn lại cách chia âm tiết.
-                </p>
-              </Step>
-            </>
-          )}
+
+                <div>
+                  <p className="text-xs uppercase tracking-wider text-slate-500">Bước 3 · Đặt dấu nhấn</p>
+                  {stressOptions(syls).map((o) => (
+                    <div key={o.index} className="mt-2">
+                      <p className="text-sm">
+                        <b>Nhấn âm {o.index + 1}</b>
+                        {o.chance !== null && <span className="ml-1 text-slate-500">({o.chance}%)</span>}
+                        {o.reason && <span className="ml-2 text-slate-500">{o.reason}</span>}
+                      </p>
+                      <Chips result={analyse(syls, o.index, { verb, reduce: {} })} stress={o.index} />
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )
+          })}
+
+          <Step n={4} title="Đọc thử và chọn">
+            <div className="flex flex-wrap items-center gap-3">
+              <button type="button" className={ghostButton} onClick={() => speech.speak(word)}>
+                🔊 Nghe từ
+              </button>
+              <button type="button" className={ghostButton} onClick={() => speech.speak(word, 0.6)}>
+                🐢 Chậm
+              </button>
+            </div>
+            <p className="mt-3 text-sm text-slate-500">
+              Đọc thử từng phương án ở trên, chọn phương án có dấu nhấn hay nhất. Nếu tất cả đều dở → bước 1 sai, xem lại cách chia âm tiết.
+            </p>
+          </Step>
         </>
       )}
     </div>
@@ -325,45 +264,25 @@ const STATE_LABEL: Record<AnalysedSyllable['state'], string> = {
   fixed: 'cố định',
 }
 
-function Chips({
-  result,
-  stress,
-  reduce,
-  onToggle,
-}: {
-  result: AnalysedSyllable[]
-  stress: number
-  reduce: Record<number, 'u' | 'i'>
-  onToggle: (i: number) => void
-}) {
+function Chips({ result, stress }: { result: AnalysedSyllable[]; stress: number }) {
   return (
-    <div className="mt-2 flex flex-wrap items-start gap-2">
-      {result.map((r, i) => {
-        const body = (
-          <>
-            <span className="font-mono text-lg">
-              {r.state === 'stressed' && i === stress && <span className="text-rose-500">ˈ</span>}
-              {r.text}
-            </span>
-            <span className={`block text-sm ${r.state === 'reduced' ? 'font-semibold text-sky-700' : 'text-slate-600'}`}>
-              /{r.sound}/ <span className="text-xs opacity-60">{STATE_LABEL[r.state]}</span>
-            </span>
-            {r.note && <span className="block text-xs text-slate-500">{r.note}</span>}
-          </>
-        )
-        const cls = `rounded-lg border px-3 py-2 text-left ${
-          r.state === 'stressed' ? 'border-rose-500 bg-rose-50' : 'border-slate-300 bg-slate-50'
-        }`
-        return r.state === 'reduced' ? (
-          <button key={i} type="button" onClick={() => onToggle(i)} className={`${cls} hover:border-sky-500`} title={`Đổi /${reduce[i] ?? 'u'}/ ↔ /${(reduce[i] ?? 'u') === 'u' ? 'i' : 'u'}/`}>
-            {body}
-          </button>
-        ) : (
-          <div key={i} className={cls}>
-            {body}
-          </div>
-        )
-      })}
+    <div className="mt-1 flex flex-wrap items-start gap-2">
+      {result.map((r, i) => (
+        <div
+          key={i}
+          className={`rounded-lg border px-3 py-2 ${r.state === 'stressed' ? 'border-rose-500 bg-rose-50' : 'border-slate-300 bg-slate-50'}`}
+        >
+          <span className="font-mono text-lg">
+            {r.state === 'stressed' && i === stress && <span className="text-rose-500">ˈ</span>}
+            {r.text}
+          </span>
+          <span className={`block text-sm ${r.state === 'reduced' ? 'font-semibold text-sky-700' : 'text-slate-600'}`}>
+            /{r.sound}/{r.state === 'reduced' && <span className="font-normal opacity-60"> hoặc /i/</span>}{' '}
+            <span className="text-xs opacity-60">{STATE_LABEL[r.state]}</span>
+          </span>
+          {r.note && <span className="block text-xs text-slate-500">{r.note}</span>}
+        </div>
+      ))}
     </div>
   )
 }
