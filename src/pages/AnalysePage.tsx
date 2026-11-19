@@ -201,16 +201,35 @@ function Tool() {
 
                 <div>
                   <p className="text-xs uppercase tracking-wider text-slate-500">Bước 3 · Đặt dấu nhấn</p>
-                  {stressOptions(syls).map((o) => (
-                    <div key={o.index} className="mt-2">
-                      <p className="text-sm">
-                        <b>Nhấn âm {o.index + 1}</b>
-                        {o.chance !== null && <span className="ml-1 text-slate-500">({o.chance}%)</span>}
-                        {o.reason && <span className="ml-2 text-slate-500">{o.reason}</span>}
-                      </p>
-                      <Chips result={analyse(syls, o.index, { verb, reduce: {} })} stress={o.index} />
-                    </div>
-                  ))}
+                  {(() => {
+                    const opts = stressOptions(syls)
+                    const top = Math.max(...opts.map((o) => o.chance ?? 0))
+                    const main = opts.filter((o) => (o.chance ?? 0) === top)
+                    const rest = opts.filter((o) => (o.chance ?? 0) !== top)
+                    const row = (o: (typeof opts)[number]) => (
+                      <div key={o.index} className="mt-2">
+                        <p className="text-sm">
+                          <b>Nhấn âm {o.index + 1}</b>
+                          {o.chance !== null && <span className="ml-1 text-slate-500">({o.chance}%)</span>}
+                          {o.reason && <span className="ml-2 text-slate-500">{o.reason}</span>}
+                        </p>
+                        <Chips result={analyse(syls, o.index, { verb, reduce: {} })} stress={o.index} />
+                      </div>
+                    )
+                    return (
+                      <>
+                        {main.map(row)}
+                        {rest.length > 0 && (
+                          <details className="mt-3">
+                            <summary className="cursor-pointer text-sm text-sky-600">
+                              Xem thêm {rest.length} phương án ({rest.map((o) => `${o.chance}%`).join(', ')})
+                            </summary>
+                            {rest.map(row)}
+                          </details>
+                        )}
+                      </>
+                    )
+                  })()}
                 </div>
               </section>
             )
