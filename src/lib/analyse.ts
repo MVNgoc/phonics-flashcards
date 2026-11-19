@@ -126,8 +126,17 @@ export function splitSyllables(raw: string): SplitCandidate[] {
   const word = raw.toLowerCase().replace(/[^a-z]/g, '')
   if (!word) return []
 
+  // -ed sau phụ âm không phải t, d thì câm (absorbed, accused): dính vào âm tiết cuối.
+  const silentEd = /[^aeiouy]ed$/.test(word) && !/[td]ed$/.test(word) && /[aeiouy]/.test(word.slice(0, -2))
+  // -s số nhiều đứng sau hậu tố (achievements): dính vào âm tiết cuối.
+  const plural = !silentEd && /[^s]s$/.test(word) && SUFFIXES.some((x) => !x.parts.some((p) => p.fixed) && word.slice(0, -1).endsWith(x.text) && word.length - 1 > x.text.length)
+  // -es sau phụ âm thường (lines, cakes): e câm, s dính vào âm tiết cuối.
+  const silentEs = !silentEd && /[^aeiouysxzcgh]es$/.test(word) && /[aeiouy]/.test(word.slice(0, -2))
+  const coda = silentEd ? 'ed' : plural || silentEs ? 's' : ''
+  const stem = word.slice(0, word.length - coda.length)
+
   const suffixes: Suffix[] = []
-  let base = word
+  let base = stem
   const notes: string[] = []
   for (;;) {
     const s = SUFFIXES.find((x) => base.length > x.text.length && base.endsWith(x.text) && /[aeiouy]/.test(base.slice(0, -x.text.length)))
@@ -155,10 +164,11 @@ export function splitSyllables(raw: string): SplitCandidate[] {
   )
 
   const { options, notes: baseNotes } = splitBase(base)
-  return options.map((syls) => ({
-    syllables: [...syls.map((text) => ({ text })), ...tail],
-    notes: [...notes, ...baseNotes],
-  }))
+  return options.map((syls) => {
+    const all: Syllable[] = [...syls.map((text) => ({ text })), ...tail]
+    if (coda) all[all.length - 1] = { ...all[all.length - 1], text: all[all.length - 1].text + coda }
+    return { syllables: all, notes: [...notes, ...baseNotes, ...(silentEd ? ['-ed câm: không tính là âm tiết'] : [])] }
+  })
 }
 
 // ───────────── Bước 2: Shades of sounds trên từng âm tiết ─────────────
@@ -231,7 +241,10 @@ export function stressOptions(syls: Syllable[]): StressOption[] {
   const n = syls.length
   const que = syls.findIndex((s) => /que$/.test(s.text))
   if (que !== -1) return [{ index: que, chance: null, reason: 'Âm tiết -que luôn được nhấn' }]
-  const fixedAt = syls.findIndex(FIXED_STRESS_BEFORE)
+  let fixedAt = -1
+  syls.forEach((x, i) => {
+    if (FIXED_STRESS_BEFORE(x)) fixedAt = i
+  })
   if (fixedAt > 0) return [{ index: fixedAt - 1, chance: null, reason: `Âm đuôi -${syls[fixedAt].text} luôn giữ nguyên, nhấn âm tiết ngay trước nó` }]
   if (n === 1) return [{ index: 0, chance: null }]
   if (n === 4)
@@ -241,7 +254,7 @@ export function stressOptions(syls: Syllable[]): StressOption[] {
       { index: 2, chance: 40 },
     ]
   const last = n - 1
-  return Array.from({ length: n === 2 ? 2 : last }, (_, i) => ({ index: i, chance: null }))
+  return Array.from({ length: n <= 3 ? n : last }, (_, i) => ({ index: i, chance: null }))
 }
 
 export interface AnalysedSyllable {

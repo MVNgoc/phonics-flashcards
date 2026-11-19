@@ -21,6 +21,11 @@ describe('splitSyllables', () => {
     expect(splits('make')).toEqual(['make'])
     expect(splits('table')[0]).toBe('ta.ble')
   })
+  it('-ed câm không tính là âm tiết, -s số nhiều dính vào âm tiết cuối', () => {
+    expect(splits('absorbed')).toEqual(['ab.sorbed'])
+    expect(splits('wanted')).toEqual(['wan.ted'])
+    expect(splits('achievements')[0]).toBe('a.chieve.ments')
+  })
   it('hậu tố nhiều âm tiết', () => {
     expect(splits('biology')[0]).toBe('bi.o.lo.gy')
   })
@@ -51,6 +56,16 @@ describe('stress', () => {
   it('y cuối từ nhiều âm tiết không rớt mà đọc /i/ (naturally → -ly = /i/)', () => {
     const syls = splitSyllables('naturally')[0].syllables
     expect(analyse(syls, 1, { verb: false, reduce: {} }).map((x) => x.sound)).toEqual(['u', 'ur', 'u', 'i'])
+  })
+  it('hai đuôi cố định liền nhau: nhấn trước đuôi cuối (addiction, electricity)', () => {
+    const a = splitSyllables('addiction')[0].syllables
+    expect(stressOptions(a)[0].index).toBe(a.length - 2)
+    const e = splitSyllables('electricity')[0].syllables
+    expect(stressOptions(e)).toHaveLength(1)
+  })
+  it('từ 3 âm tiết có thể nhấn âm cuối; từ 4 âm tiết thì không', () => {
+    expect(stressOptions(splitSyllables('afternoon')[0].syllables).map((o) => o.index)).toEqual([0, 1, 2])
+    expect(stressOptions(splitSyllables('naturally')[0].syllables).map((o) => o.index)).toEqual([0, 1, 2])
   })
   it('-tion luôn là /shun/, nhấn âm trước nó; -que luôn nhấn', () => {
     const syls = splitSyllables('station')[0].syllables
