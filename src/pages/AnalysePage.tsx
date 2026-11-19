@@ -297,7 +297,7 @@ function Chips({ result, stress }: { result: AnalysedSyllable[]; stress: number 
             {r.text}
           </span>
           <span className={`block text-sm ${r.state === 'reduced' ? 'font-semibold text-sky-700' : 'text-slate-600'}`}>
-            /{r.sound}/{r.state === 'reduced' && <span className="font-normal opacity-60"> hoặc /i/</span>}{' '}
+            /{r.sound}/{r.state === 'reduced' && r.sound === 'u' && <span className="font-normal opacity-60"> hoặc /i/</span>}{' '}
             <span className="text-xs opacity-60">{STATE_LABEL[r.state]}</span>
           </span>
           {r.note && <span className="block text-xs text-slate-500">{r.note}</span>}

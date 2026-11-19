@@ -283,7 +283,7 @@ export function analyse(syls: Syllable[], stress: number, opts: AnalyseOptions):
     }
     if (i === stress) return { text: s.text, state: 'stressed', sound: shade.sound, shade }
     if (n === 4 && stress === 2 && i === 0) return { text: s.text, state: 'kept', sound: shade.sound, shade, note: 'Giữ nguyên theo bước 2' }
-    if (shade.rule === 13) return { text: s.text, state: 'kept', sound: 'i', shade, note: 'y cuối từ → /i/ (quy tắc 13)' }
+    if (shade.rule === 13) return { text: s.text, state: 'reduced', sound: 'i', shade, note: 'y cuối từ rớt /i/ (quy tắc 13)' }
     return { text: s.text, state: 'reduced', sound: opts.reduce[i] ?? 'u', shade }
   })
 }
