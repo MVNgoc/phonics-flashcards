@@ -148,7 +148,7 @@ function ReadMode({ bank }: { bank: RuleBank | null }) {
   return (
     <div className="space-y-4">
       <p className="text-sm text-slate-500">
-        14 quy tắc đọc. Số từ đúng quy tắc và ngoại lệ được đếm tự động từ từ điển phát âm giọng Anh của app.
+        15 quy tắc đọc. Số từ đúng quy tắc và ngoại lệ được đếm tự động từ từ điển phát âm giọng Anh của app.
       </p>
       <ol className="space-y-4">
         {SOUND_RULES.map((rule) => {

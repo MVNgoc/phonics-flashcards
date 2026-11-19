@@ -197,6 +197,21 @@ export const SOUND_RULES: SoundRule[] = [
       },
     ],
   },
+  {
+    id: 15,
+    title: 'e, i, o, u + r → /ur/',
+    text: 'Các nguyên âm e, i, o, u đứng trước r thì đọc /ur/.',
+    examples: ['her', 'bird', 'word', 'turn'],
+    note: 'Ngoại lệ hay gặp: for, more, store (or → /or/).',
+    cards: [
+      {
+        id: 'r15',
+        cue: 'e, i, o, u đứng trước r',
+        result: 'Đọc /ur/',
+        examples: ['her', 'bird', 'word', 'turn'],
+      },
+    ],
+  },
 ]
 
 export const RULE_CARDS: (RuleCard & { ruleId: number })[] = SOUND_RULES.flatMap((r) =>
@@ -221,6 +236,7 @@ export type Outcome =
   | 'ngg'
   | 'i'
   | 'igh'
+  | 'ur'
 
 export const OUTCOME_LABEL: Record<Outcome, string> = {
   long: 'Dài (như tên chữ)',
@@ -236,6 +252,7 @@ export const OUTCOME_LABEL: Record<Outcome, string> = {
   ngg: '/ng/ + /g/',
   i: '/i/',
   igh: '/igh/',
+  ur: '/ur/',
 }
 
 export interface RuleQuestion {
@@ -500,6 +517,17 @@ const DETECTORS: Record<number, Detector> = {
     } else if (vowels.length >= 3 || (vowels.length === 2 && /^[^aeiouy]*[aeiouy][^aeiouy]+e$/.test(w))) {
       pushEx({ word: w, start: w.length - 1, end: w.length, expected: 'silent', actual: `đọc /${last.base}/` })
     }
+  },
+
+  15: (w, s, push, pushEx) => {
+    if (countText(w, /[aeiouy]r/g) !== 1) return
+    const m = /(?:^|[^aeiouy])([eiou])r(?![aeiouy])/.exec(w)
+    if (!m) return
+    const at = m.index + m[0].indexOf(m[1])
+    const hasUr = s.some((x) => x.base === 'ɜː')
+    if (hasUr) push({ word: w, start: at, end: at + 2, options: ['ur', 'short'], answer: 'ur' })
+    else if (s.filter(isVowelSound).length === 1)
+      pushEx({ word: w, start: at, end: at + 2, expected: 'ur', actual: 'không đọc /ur/' })
   },
 }
 

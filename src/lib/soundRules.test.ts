@@ -12,6 +12,10 @@ import {
 
 const PRONS: Record<string, string[]> = {
   go: ['g ˈəʊ'],
+  her: ['h ɜː'],
+  bird: ['b ˈɜː d'],
+  word: ['w ˈɜː d'],
+  for: ['f ˈɔː'],
   two: ['t ˈuː'],
   paper: ['p ˈeɪ p ə'],
   cat: ['k ˈæ t'],
@@ -63,8 +67,8 @@ function ex(ruleId: number, word: string) {
 const marked = (x: { word: string; start: number; end: number }) => x.word.slice(x.start, x.end)
 
 describe('dữ liệu quy tắc', () => {
-  it('có đủ 14 quy tắc, id thẻ không trùng', () => {
-    expect(SOUND_RULES.map((r) => r.id)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14])
+  it('có đủ 15 quy tắc, id thẻ không trùng', () => {
+    expect(SOUND_RULES.map((r) => r.id)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15])
     const ids = RULE_CARDS.map((c) => c.id)
     expect(new Set(ids).size).toBe(ids.length)
   })
@@ -155,6 +159,13 @@ describe('buildRuleBank', () => {
     expect(ex(14, 'recipe')).toBeTruthy()
     expect(q(14, 'fire')).toEqual([])
     expect(ex(14, 'fire')).toBeUndefined()
+  })
+
+  it('#15 er/ir/or/ur → /ur/: her, bird, word; for là ngoại lệ', () => {
+    expect(q(15, 'her')[0]).toMatchObject({ answer: 'ur', start: 1, end: 3 })
+    expect(q(15, 'bird')[0].answer).toBe('ur')
+    expect(q(15, 'word')[0].answer).toBe('ur')
+    expect(ex(15, 'for')).toBeTruthy()
   })
 })
 
