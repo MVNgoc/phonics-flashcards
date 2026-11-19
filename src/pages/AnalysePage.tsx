@@ -29,11 +29,12 @@ const GUIDE: { title: string; items: { text: string; example?: string }[] }[] = 
     items: [
       { text: 'Số âm tiết ≤ số nguyên âm (e câm cuối từ không tính).' },
       { text: 'Ưu tiên double consonants: chia ở giữa hai phụ âm giống nhau.', example: 'let·ter, rab·bit' },
-      { text: 'Ưu tiên từ gốc.', example: 'teach·er, speak·er, nat·ur·al·ly' },
+      { text: 'Ưu tiên từ gốc.', example: 'teach·er, speak·er, na·tur·al·ly' },
       {
         text: 'Tách các cụm hậu tố: -ly, -al, -er, -ic, -ology, -ality, -ing, -est, -ent, -ence, -tion, -tious…',
         example: 'bi·o·lo·gy, re·al·i·ty',
       },
+      { text: 'Một phụ âm đơn giữa hai nguyên âm: đặt dấu chấm trước phụ âm đó.', example: 'na·tu·ral, ti·ger' },
       {
         text: 'Nhiều phụ âm liền nhau: sau khi đã ưu tiên xong, đặt dấu chấm ở đâu cũng được (ở giữa hai phụ âm).',
         example: 'bas·ket = bask·et',

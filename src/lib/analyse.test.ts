@@ -7,8 +7,7 @@ describe('splitSyllables', () => {
   it('ưu tiên từ gốc và tách hậu tố', () => {
     expect(splits('teacher')).toEqual(['teach.er'])
     expect(splits('speaker')).toEqual(['speak.er'])
-    expect(splits('naturally')[0]).toBe('na.tur.al.ly')
-    expect(splits('naturally')).toContain('nat.ur.al.ly')
+    expect(splits('naturally')).toEqual(['na.tur.al.ly'])
   })
   it('ưu tiên double consonant', () => {
     expect(splits('letter')).toEqual(['let.ter'])

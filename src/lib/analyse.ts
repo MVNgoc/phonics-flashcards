@@ -65,9 +65,9 @@ function consonantUnits(c: string): string[] {
   return units
 }
 
-/** Vị trí cắt (số đơn vị phụ âm ở lại âm tiết trước), ưu tiên đứng trước. */
+/** Vị trí cắt (số đơn vị phụ âm ở lại âm tiết trước). Một phụ âm đơn: dấu chấm đứng trước nó (na·tu·ral). */
 function cutOptions(units: string[]): { cuts: number[]; note?: string } {
-  if (units.length === 1) return { cuts: [0, 1] }
+  if (units.length === 1) return { cuts: [0] }
   for (let i = 0; i < units.length - 1; i++) {
     if (units[i] === units[i + 1]) return { cuts: [i + 1], note: `double consonant ${units[i]}${units[i]}` }
   }
