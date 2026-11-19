@@ -1,14 +1,16 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useSettings } from '../hooks/useSettings'
 import { useSpeech } from '../hooks/useSpeech'
 import {
   analyse,
+  dictionaryInfo,
   splitSyllables,
   stressOptions,
   type AnalysedSyllable,
   type SplitCandidate,
 } from '../lib/analyse'
+import pronunciationsUrl from '../data/pronunciations.json?url'
 
 type Mode = 'guide' | 'tool'
 
@@ -121,17 +123,34 @@ function Guide() {
   )
 }
 
+function usePronunciations(): Record<string, string[]> | null {
+  const [prons, setProns] = useState<Record<string, string[]> | null>(null)
+  useEffect(() => {
+    let alive = true
+    fetch(pronunciationsUrl)
+      .then((r) => r.json() as Promise<Record<string, string[]>>)
+      .then((d) => alive && setProns(d))
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [])
+  return prons
+}
+
 const dots = (c: SplitCandidate) => c.syllables.map((s) => s.text).join('·')
 
 function Tool() {
   const { settings } = useSettings()
   const speech = useSpeech(settings.dictationVoice)
 
+  const prons = usePronunciations()
   const [query, setQuery] = useState('')
   const [verb, setVerb] = useState(false)
 
   const word = query.toLowerCase().replace(/[^a-z]/g, '')
   const splits = useMemo(() => splitSyllables(word), [word])
+  const dict = useMemo(() => dictionaryInfo(prons?.[word]?.[0]), [prons, word])
   const hasAceAgeAte = splits.some((c) => c.syllables.length > 1 && /a(ce|ge|te)$/.test(c.syllables[c.syllables.length - 1].text))
 
   return (
@@ -166,6 +185,11 @@ function Tool() {
             {splits.length === 1 ? '1 cách chia âm tiết' : `${splits.length} cách chia âm tiết đều hợp lệ`}. Mỗi cách chia kèm các phương án dấu nhấn.
             Nghe từ rồi chọn phương án nhấn hay nhất.
           </p>
+          {dict && (
+            <p className="text-sm">
+              Từ điển: <span className="font-mono">{dict.ipa}</span> · {dict.syllables} âm tiết · nhấn âm {dict.stress + 1}
+            </p>
+          )}
 
           {splits.map((c) => {
             const syls = c.syllables
@@ -203,14 +227,17 @@ function Tool() {
                   <p className="text-xs uppercase tracking-wider text-slate-500">Bước 3 · Đặt dấu nhấn</p>
                   {(() => {
                     const opts = stressOptions(syls)
+                    const fromDict = dict && dict.syllables === syls.length ? opts.find((o) => o.index === dict.stress) : undefined
                     const top = Math.max(...opts.map((o) => o.chance ?? 0))
-                    const main = opts.filter((o) => (o.chance ?? 0) === top)
-                    const rest = opts.filter((o) => (o.chance ?? 0) !== top)
+                    const isMain = (o: (typeof opts)[number]) => (fromDict ? o === fromDict : (o.chance ?? 0) === top)
+                    const main = opts.filter(isMain)
+                    const rest = opts.filter((o) => !isMain(o))
                     const row = (o: (typeof opts)[number]) => (
                       <div key={o.index} className="mt-2">
                         <p className="text-sm">
                           <b>Nhấn âm {o.index + 1}</b>
                           {o.chance !== null && <span className="ml-1 text-slate-500">({o.chance}%)</span>}
+                          {o === fromDict && <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">theo từ điển</span>}
                           {o.reason && <span className="ml-2 text-slate-500">{o.reason}</span>}
                         </p>
                         <Chips result={analyse(syls, o.index, { verb, reduce: {} })} stress={o.index} />
@@ -222,7 +249,7 @@ function Tool() {
                         {rest.length > 0 && (
                           <details className="mt-3">
                             <summary className="cursor-pointer text-sm text-sky-600">
-                              Xem thêm {rest.length} phương án ({rest.map((o) => `${o.chance}%`).join(', ')})
+                              Xem thêm {rest.length} phương án ({rest.map((o) => (o.chance !== null ? `${o.chance}%` : `âm ${o.index + 1}`)).join(', ')})
                             </summary>
                             {rest.map(row)}
                           </details>

@@ -287,3 +287,29 @@ export function analyse(syls: Syllable[], stress: number, opts: AnalyseOptions):
     return { text: s.text, state: 'reduced', sound: opts.reduce[i] ?? 'u', shade }
   })
 }
+
+// ───────────── Dấu nhấn theo từ điển phát âm ─────────────
+
+const IPA_VOWELS = new Set([
+  'æ', 'ɑː', 'ɛ', 'ɪ', 'i', 'iː', 'ɒ', 'ɔː', 'ɐ', 'ʌ', 'ə', 'ʊ', 'uː', 'ɜː',
+  'eɪ', 'aɪ', 'əʊ', 'aʊ', 'ɔɪ', 'ɪə', 'ɛə', 'ʊə',
+])
+
+export interface DictionaryInfo {
+  ipa: string
+  syllables: number
+  /** Vị trí âm tiết mang dấu nhấn chính (từ 0). */
+  stress: number
+}
+
+export function dictionaryInfo(pron: string | undefined): DictionaryInfo | null {
+  if (!pron) return null
+  let syllables = 0
+  let stress = 0
+  for (const t of pron.split(' ').filter(Boolean)) {
+    if (!IPA_VOWELS.has(t.replace(/^[ˈˌ]/, ''))) continue
+    if (t.startsWith('ˈ')) stress = syllables
+    syllables++
+  }
+  return { ipa: `/${pron.replace(/ /g, '')}/`, syllables, stress }
+}
