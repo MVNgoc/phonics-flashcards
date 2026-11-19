@@ -48,6 +48,10 @@ describe('stress', () => {
     const r = analyse(syls, 2, { verb: false, reduce: {} })
     expect(r.map((x) => x.state)).toEqual(['kept', 'reduced', 'stressed', 'reduced'])
   })
+  it('y cuối từ nhiều âm tiết không rớt mà đọc /i/ (naturally → -ly = /i/)', () => {
+    const syls = splitSyllables('naturally')[0].syllables
+    expect(analyse(syls, 1, { verb: false, reduce: {} }).map((x) => x.sound)).toEqual(['u', 'ur', 'u', 'i'])
+  })
   it('-tion luôn là /shun/, nhấn âm trước nó; -que luôn nhấn', () => {
     const syls = splitSyllables('station')[0].syllables
     expect(stressOptions(syls)).toMatchObject([{ index: syls.length - 2 }])
