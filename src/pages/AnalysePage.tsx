@@ -148,6 +148,7 @@ function Tool() {
   const [splitPick, setSplitPick] = useState<number | null>(null)
   const [stressPick, setStressPick] = useState<number | null>(null)
   const [verb, setVerb] = useState(false)
+  const [reveal, setReveal] = useState(false)
   const [reduce, setReduce] = useState<Record<number, 'u' | 'i'>>({})
 
   const word = query.toLowerCase().replace(/[^a-z]/g, '')
@@ -178,6 +179,7 @@ function Tool() {
     setSplitPick(null)
     setStressPick(null)
     setReduce({})
+    setReveal(false)
   }
 
   return (
@@ -198,6 +200,17 @@ function Tool() {
       {word && !split && <p className="cp-panel p-6 text-center text-slate-500">Không phân tích được từ này.</p>}
 
       {split && (
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm text-slate-500">
+            {reveal ? 'Đang hiện gợi ý.' : 'Tự phân tích trên giấy trước, rồi xem gợi ý để đối chiếu.'}
+          </p>
+          <button type="button" className={ghostButton} aria-pressed={reveal} onClick={() => setReveal((r) => !r)}>
+            {reveal ? 'Ẩn gợi ý' : 'Xem gợi ý'}
+          </button>
+        </div>
+      )}
+
+      {split && reveal && (
         <>
           <Step n={1} title="Chia âm tiết">
             <p className="text-sm text-slate-500">
