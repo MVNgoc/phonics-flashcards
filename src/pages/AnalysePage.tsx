@@ -150,7 +150,7 @@ function Tool() {
 
   const word = query.toLowerCase().replace(/[^a-z]/g, '')
   const splits = useMemo(() => splitSyllables(word), [word])
-  const dict = useMemo(() => dictionaryInfo(prons?.[word]?.[0]), [prons, word])
+  const dicts = useMemo(() => (prons?.[word] ?? []).map(dictionaryInfo).filter((d) => d !== null), [prons, word])
   const hasAceAgeAte = splits.some((c) => c.syllables.length > 1 && /a(ce|ge|te)$/.test(c.syllables[c.syllables.length - 1].text))
 
   return (
@@ -185,9 +185,15 @@ function Tool() {
             {splits.length === 1 ? '1 cách chia âm tiết' : `${splits.length} cách chia âm tiết đều hợp lệ`}. Mỗi cách chia kèm các phương án dấu nhấn.
             Nghe từ rồi chọn phương án nhấn hay nhất.
           </p>
-          {dict && (
+          {dicts.length > 0 && (
             <p className="text-sm">
-              Từ điển: <span className="font-mono">{dict.ipa}</span> · {dict.syllables} âm tiết · nhấn âm {dict.stress + 1}
+              Từ điển:{' '}
+              {dicts.map((d, i) => (
+                <span key={d.ipa}>
+                  {i > 0 && ' · '}
+                  <span className="font-mono">{d.ipa}</span> ({d.syllables} âm tiết, nhấn âm {d.stress + 1})
+                </span>
+              ))}
             </p>
           )}
 
@@ -227,7 +233,8 @@ function Tool() {
                   <p className="text-xs uppercase tracking-wider text-slate-500">Bước 3 · Đặt dấu nhấn</p>
                   {(() => {
                     const opts = stressOptions(syls)
-                    const fromDict = dict && dict.syllables === syls.length ? opts.find((o) => o.index === dict.stress) : undefined
+                    const dict = dicts.find((d) => d.syllables === syls.length)
+                    const fromDict = dict ? opts.find((o) => o.index === dict.stress) : undefined
                     const top = Math.max(...opts.map((o) => o.chance ?? 0))
                     const isMain = (o: (typeof opts)[number]) => (fromDict ? o === fromDict : (o.chance ?? 0) === top)
                     const main = opts.filter(isMain)
